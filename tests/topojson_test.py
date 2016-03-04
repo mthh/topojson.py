@@ -1,15 +1,13 @@
 import json
 import unittest
-
-from topojson.conversion import convert
+from pytopojson import geo_to_topo
 
 
 class TestTopojson(unittest.TestCase):
-
     def setUp(self):
         with open("tests/data/square.geojson") as f:
             self.square_geojson = json.load(f)
 
     def test_convert_geojson_to_topojson(self):
-        tj = convert(self.square_geojson)
+        tj = geo_to_topo(self.square_geojson)
         self.assertEqual(tj['type'], 'Topology')

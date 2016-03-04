@@ -1,31 +1,38 @@
-TYPEGEOMETRIES = (
-    'LineString',
-    'MultiLineString',
-    'MultiPoint',
-    'MultiPolygon',
-    'Point',
-    'Polygon',
-    'GeometryCollection'
-)
+# -*- coding: utf-8 -*-
+ctypedef public struct Point:
+    double x
+    double y
 
+ctypedef public struct Trans_param:
+    double x
+    double y
 
-class Transformer:
-    def __init__(self,transform,arcs):
-        self.scale = transform['scale']
-        self.translate = transform['translate']
-        self.arcs = list(map(self.convert_arc,arcs))
-    def convert_arc(self,arc):
-        out_arc = []
-        previous=[0,0]
+ctypedef public struct Scale_param:
+    double x
+    double y
+
+cdef class Transformer:
+    cdef Scale_param scale
+    cdef Trans_param translate
+    cdef list arcs
+    def __init__(self, transform, arcs):
+        self.scale.x, self.scale.y = transform['scale']
+        self.translate.x, self.translate.y = transform['translate']
+        self.arcs = [self.convert_arc(a) for a in arcs]
+
+    cdef list convert_arc(self, list arc):
+        cdef list out_arc = [], previous=[0,0]
         for point in arc:
             previous[0]+=point[0]
             previous[1]+=point[1]
             out_arc.append(self.convert_point(previous))
         return out_arc
-    def reversed_arc(self,arc):
+
+    cdef list reversed_arc(self,arc):
         return list(map(None,reversed(self.arcs[~arc])))
-    def stitch_arcs(self,arcs):
-        line_string = []
+
+    cdef list stitch_arcs(self, list arcs):
+        cdef list line_string = []
         for arc in arcs:
             if arc<0:
                 line = self.reversed_arc(arc)
@@ -39,12 +46,18 @@ class Transformer:
             else:
                 line_string.extend(line)
         return line_string
-    def stich_multi_arcs(self,arcs):
-        return list(map(self.stitch_arcs,arcs))
-    def convert_point(self,point):
-        return [point[0]*self.scale[0]+self.translate[0],point[1]*self.scale[1]+self.translate[1]]
-    def feature(self,feature):
-        out={'type':'Feature'}
+
+    cdef list stich_multi_arcs(self,arcs):
+        return [self.stitch_arcs(a) for a in arcs]
+
+    cdef list conv_point(self, Point point):
+        return [point.x*self.scale.x+self.translate.x,point.y*self.scale.y+self.translate.y]
+
+    cpdef convert_point(self, point):
+        return self.conv_point({'x': point[0], 'y': point[1]})
+
+    cdef feature(self, dict feature):
+        cdef dict out={'type':'Feature'}
         out['geometry']={'type':feature['type']}
         if feature['type'] in ('Point','MultiPoint'):
             out['geometry']['coordinates'] = feature['coordinates']
@@ -57,6 +70,7 @@ class Transformer:
                 out[key] = feature[key]
         out['geometry']=self.geometry(out['geometry'])
         return out
+
     def geometry(self,geometry):
         if geometry['type']=='Point':
             return self.point(geometry)
@@ -72,11 +86,12 @@ class Transformer:
             return self.multi_poly(geometry)
         elif geometry['type']=='GeometryCollection':
             return self.geometry_collection(geometry)
-    def point(self,geometry):
-        geometry['coordinates']=self.convert_point(geometry[coordinates])
+
+    def point(self, geometry):
+        geometry['coordinates'] = self.convert_point(geometry['coordinates'])
         return geometry
-    def multi_point(self,geometry):
-        geometry['coordinates']= list(map(self.convert_point,geometry[coordinates]))
+    def multi_point(self, geometry):
+        geometry['coordinates']= [self.convert_point(geom) for geom in geometry['coordinates']]
         return  geometry
     def line_string(self,geometry):
         geometry['coordinates']=self.stitch_arcs(geometry['arcs'])
@@ -87,19 +102,10 @@ class Transformer:
         del geometry['arcs']
         return geometry
     def multi_poly(self,geometry):
-        geometry['coordinates']= list(map(self.stich_multi_arcs,geometry['arcs']))
+        geometry['coordinates'] = [self.stich_multi_arcs(a) for a in geometry['arcs']]
         del geometry['arcs']
         return geometry
-    def geometry_collection(self,geometry):
-        out = {'type':'FeatureCollection'}
-        out['features']= list(map(self.feature,geometry['geometries']))
+    def geometry_collection(self, geometry):
+        out = {'type': 'FeatureCollection'}
+        out['features'] = [self.feature(geom) for geom in geometry['geometries']]
         return out
-def from_topo(topo,obj_name):
-    if obj_name in topo['objects']:
-        geojson = topo['objects'][obj_name]
-    else:
-        raise Exception(u"Something ain't right")
-    transformer = Transformer(topo['transform'],topo['arcs'])
-    if geojson['type'] in TYPEGEOMETRIES:
-        geojson = transformer.geometry(geojson)
-    return geojson

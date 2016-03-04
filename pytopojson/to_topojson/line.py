@@ -3,9 +3,10 @@ from .utils import point_compare,is_point,Strut,mysterious_line_test
 
 
 class Line:
-    def __init__(self,Q):
+    def __init__(self, Q):
         self.arcs = Arcs(Q)
-    def arc(self,current_arc, last=False):
+
+    def arc(self, current_arc, last=False):
         n = len(current_arc)
         if last and not len(self.line_arcs) and n == 1:
             point = current_arc[0]
@@ -24,8 +25,7 @@ class Line:
         n = len(points)
         current_arc = Strut()
         k = 0
-        p=False
-        t=False
+        p, t = False, False
         if not opened:
             points.pop()
             n-=1
@@ -34,8 +34,10 @@ class Line:
             if opened:
                 break
             if p and not mysterious_line_test(p, t):
-                tInP = all(map(lambda line:line in p,t))
-                pInT = all(map(lambda line:line in t,p))
+                tInP = all([line in p for line in t])
+                pInT = all([line in t for line in p])
+#                tInP = all(map(lambda line:line in p,t))
+#                pInT = all(map(lambda line:line in t,p))
                 if tInP and not pInT:
                     k-=1
                 break
@@ -62,8 +64,10 @@ class Line:
             point = points[(i + k) % n]
             p = self.arcs.peak(point)
             if not mysterious_line_test(p, t):
-                tInP = all(map(lambda line: line in p,t))
-                pInT = all(map(lambda line: line in t,p))
+                tInP = all([line in p for line in t])
+                pInT = all([line in t for line in p])
+#                tInP = all(map(lambda line: line in p,t))
+#                pInT = all(map(lambda line: line in t,p))
                 if tInP:
                     current_arc.append(point);
                 self.arc(current_arc)
@@ -78,13 +82,16 @@ class Line:
             t = p
         self.arc(current_arc, True)
         return self.line_arcs
+
     def line_closed(self,points):
         return self.line(points,False)
+
     def line_open(self,points):
         return self.line(points,True)
+
     def map_func (self,arc):
-        if len(arc)==2 and type(arc[0])==type(1):
-            arc= [arc]
+        if len(arc)==2 and isinstance(arc[0], int):
+            arc = [arc]
         i = 1
         n = len(arc)
         point = arc[0]
@@ -107,5 +114,6 @@ class Line:
                 y1 = y2
             i+=1
         return points
+
     def get_arcs (self):
         return self.arcs.map(self.map_func)
