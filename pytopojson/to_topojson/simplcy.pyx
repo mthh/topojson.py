@@ -12,18 +12,17 @@ cdef double getSquareDistance(Point p1, Point p2):
     """
     Square distance between two points
     """
-    cdef double dx, dy, res
+    cdef double dx, dy
     dx = p1.x - p2.x
     dy = p1.y - p2.y
-    res = dx * dx + dy * dy
-    return res
+    return dx * dx + dy * dy
 
 
 cdef double getSquareSegmentDistance(Point p, Point p1, Point p2):
     """
     Square distance between point and a segment
     """
-    cdef double x, y, dx, dy, res
+    cdef double x, y, dx, dy
     x = p1.x
     y = p1.y
 
@@ -42,8 +41,7 @@ cdef double getSquareSegmentDistance(Point p, Point p1, Point p2):
 
     dx = p.x - x
     dy = p.y - y
-    res = dx * dx + dy * dy
-    return res
+    return dx * dx + dy * dy
 
 cdef simplifyRadialDistance(list points, double tolerance):
     cdef unsigned int length, i=0
@@ -68,9 +66,9 @@ cdef simplifyRadialDistance(list points, double tolerance):
 
 
 cdef simplifyDouglasPeucker(list points, double tolerance):
-    cdef unsigned int length, first, i=0, index=0
+    cdef unsigned int length, first=0, i=0, index=0
     cdef int last
-    cdef list first_stack, last_stack, new_points, markers
+    cdef list first_stack = [], last_stack = [], new_points = [], markers
     cdef double sqdist, max_sqdist
     cdef Point pt
 
@@ -78,13 +76,7 @@ cdef simplifyDouglasPeucker(list points, double tolerance):
     #markers = <unsigned int*>malloc(length * sizeof(unsigned int))
     markers = [0] * length  # Maybe not the most efficent way?
 
-    first = 0
     last = length - 1
-
-    first_stack = []
-    last_stack = []
-    new_points = []
-
     markers[first] = 1
     markers[last] = 1
 

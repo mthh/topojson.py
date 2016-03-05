@@ -1,8 +1,7 @@
 # coding=utf8
-from __future__ import division
 from .mytypes import Types
 from .stitchpoles import stitch
-from .coordinatesystems import systems
+from .coordinatesystems import Cartesian, Spherical
 from .bounds import bound
 from .line import Line
 from .simplify import simplify_object
@@ -14,17 +13,19 @@ def property_transform (outprop, key, inprop):
 
 def topology (objects, stitchPoles=True,quantization=1e4,id_key='id',property_transform=property_transform,system = False,simplify=False):
     ln = Line(quantization)
-    id_func = lambda x:x.get(id_key, None)
+    id_func = lambda x: x.get(id_key, None)
     if simplify:
         objects = simplify_object(objects,simplify)
-    x0,x1,y0,y1 = bound(objects)
+    [x0,x1,y0,y1]=bound(objects)
     
     oversize = x0 < -180 - E or x1 > 180 + E or y0 < -90 - E or y1 > 90 + E
+
     if not system:
         if oversize:
-            system =systems["cartesian"]
+            system = Cartesian()
         else:
-            system = systems["spherical"]
+            system = Spherical()
+
     if system.name == 'spherical':
         if oversize:
             raise Exception(u"spherical coordinates outside of [±180°, ±90°]")
@@ -52,9 +53,9 @@ def topology (objects, stitchPoles=True,quantization=1e4,id_key='id',property_tr
     if not quantization:
         quantization = x1 + 1
         x0 = y0 = 0
-
+        
     class findEmax(Types):
-        def __init__(self, obj):
+        def __init__(self,obj):
             self.emax=0
             self.obj(obj)
         def point(self,point):
@@ -69,16 +70,15 @@ def topology (objects, stitchPoles=True,quantization=1e4,id_key='id',property_tr
             point[1] = int(y)
     finde=findEmax(objects)
     emax = finde.emax
-
+    # Clock(objects,system.ring_area)
     class find_coincidences(Types):
-        def line(self, line):
+        def line(self,line):
             for point in line:
                 lines = ln.arcs.coincidence_lines(point)
                 if not line in lines:
                     lines.append(line)
-
-    polygon = lambda poly: [ln.line_closed(l) for l in poly]
-#    polygon = lambda poly:list(map(ln.line_closed,poly))
+    fcInst = find_coincidences(objects)
+    polygon = lambda poly:list(map(ln.line_closed,poly))
     #Convert features to geometries, and stitch together arcs.
     class make_topo(Types):
         def Feature (self,feature):
@@ -96,20 +96,20 @@ def topology (objects, stitchPoles=True,quantization=1e4,id_key='id',property_tr
             del collection['features']
             return collection
         def GeometryCollection(self,collection):
-            collection['geometries'] = [self.geometry(g) for g in collection['geometries']]
+            collection['geometries'] = list(map(self.geometry,collection['geometries']))
         def MultiPolygon(self,multiPolygon):
-            multiPolygon['arcs'] = [polygon(coords) for coords in multiPolygon['coordinates']]
+            multiPolygon['arcs'] = list(map(polygon,multiPolygon['coordinates']))
         def Polygon(self,polygon):
-             polygon['arcs'] = [ln.line_closed(coords) for coords in polygon['coordinates']]
+             polygon['arcs'] = list(map(ln.line_closed,polygon['coordinates']))
         def MultiLineString(self,multiLineString):
-            multiLineString['arcs'] = [ln.line_open(coords) for coords in multiLineString['coordinates']]
+            multiLineString['arcs'] = list(map(ln.line_open,multiLineString['coordinates']))
         def LineString(self,lineString):
             lineString['arcs'] = ln.line_open(lineString['coordinates'])
         def geometry(self,geometry):
             if geometry == None:
                 geometry = {}
             else:
-                Types.geometry(self, geometry)
+                Types.geometry(self,geometry)
             geometry['id'] = id_func(geometry)
             if geometry['id'] == None:
                 del geometry['id']
@@ -135,8 +135,8 @@ def topology (objects, stitchPoles=True,quantization=1e4,id_key='id',property_tr
         'arcs': ln.get_arcs()
     }
 
-def make_ks(quantization,x0,x1,y0,y1):
-    [x,y]=[1,1]
+def make_ks(quantization, x0, x1, y0, y1):
+    x, y = 1, 1
     if quantization:
         if x1 - x0:
             x= (quantization - 1.0) / (x1 - x0)
