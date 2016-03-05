@@ -16,8 +16,8 @@ cdef class Hashtable:
 
     def __init__(self, double in_size):
         self.size = 1 << int(ceil(log(in_size)/log(2)))
-        self.table = [False]*self.size
-        self.mask = self.size - 1
+        self.table = [False]*int(in_size)
+        self.mask = int(in_size) - 1
         self.h = self.retfunc
 
     cpdef int retfunc(self, list point):
