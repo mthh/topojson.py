@@ -4,9 +4,9 @@
 #cython: cdivision = True
 from libc.math cimport ceil, log
 
-ctypedef int[2] Kp
+ctypedef int[2] Pair_i
 
-cdef inline bint equal(Kp keyA, Kp keyB):
+cdef inline bint equal(Pair_i keyA, Pair_i keyB):
     return keyA[0] == keyB[0] and keyA[1] == keyB[1]
 
 cdef class Hashtable:
@@ -27,23 +27,23 @@ cdef class Hashtable:
         return (~key if key < 0 else key) & self.mask
 
     cpdef peak(self, list key):
-        cdef Kp k = <Kp> key
+        cdef Pair_i k = <Pair_i> key
         matches = self.table[self.h(key)]
         if matches:
             for match in matches:
-                if equal(<Kp>match['key'], k):
+                if equal(<Pair_i>match['key'], k):
                     return match['values']
         return None
 
     cpdef get(self, list key):
-        cdef Kp k = <Kp> key
+        cdef Pair_i k = <Pair_i> key
         index = self.h(key)
         if not index:
             return []
         matches = self.table[index]
         if matches:
             for match in matches:
-                if equal(<Kp>match['key'], k):
+                if equal(<Pair_i>match['key'], k):
                     return match['values']
         else:
             matches = self.table[index] = []

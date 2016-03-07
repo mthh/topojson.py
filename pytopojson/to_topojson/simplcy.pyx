@@ -2,13 +2,15 @@
 #cython: boundscheck = False
 #cython: wraparound = False
 #cython: cdivision = True
+from libc.stdlib cimport free, malloc
+from libc.string cimport memset
 
 ctypedef struct Point:
     double x
     double y
 
 
-cdef double getSquareDistance(Point p1, Point p2):
+cdef double getSquareDistance(Point *p1, Point *p2):
     """
     Square distance between two points
     """
@@ -18,7 +20,7 @@ cdef double getSquareDistance(Point p1, Point p2):
     return dx * dx + dy * dy
 
 
-cdef double getSquareSegmentDistance(Point p, Point p1, Point p2):
+cdef double getSquareSegmentDistance(Point *p, Point *p1, Point *p2):
     """
     Square distance between point and a segment
     """
@@ -43,17 +45,17 @@ cdef double getSquareSegmentDistance(Point p, Point p1, Point p2):
     dy = p.y - y
     return dx * dx + dy * dy
 
-cdef simplifyRadialDistance(list points, double tolerance):
-    cdef unsigned int length, i=0
-    cdef list new_points = []
-    cdef Point prev_point, point
 
-    length = len(points)
-    prev_point = points[0]
+cdef list simplifyRadialDistance(Point *points, Py_ssize_t length, double tolerance):
+    cdef unsigned i=0
+    cdef list new_points = []
+    cdef Point *prev_point, *point
+
+    prev_point = &points[0]
     new_points.append((prev_point.x, prev_point.y))
 
     for i in range(length):
-        point = points[i]
+        point = &points[i]
 
         if getSquareDistance(point, prev_point) > tolerance:
             new_points.append((point.x, point.y))
@@ -65,16 +67,15 @@ cdef simplifyRadialDistance(list points, double tolerance):
     return new_points
 
 
-cdef simplifyDouglasPeucker(list points, double tolerance):
-    cdef unsigned int length, first=0, i=0, index=0
-    cdef int last
-    cdef list first_stack = [], last_stack = [], new_points = [], markers
+cdef list simplifyDouglasPeucker(Point *points, Py_ssize_t length, double tolerance):
+    cdef unsigned int i=0, index=0
+    cdef int last, first = 0
+    cdef int *markers = <int *>malloc(length * sizeof(int))
+    cdef list first_stack = [], last_stack = [], new_points = []
     cdef double sqdist, max_sqdist
-    cdef Point pt
+    cdef Point *pt
 
-    length = len(points)
-    #markers = <unsigned int*>malloc(length * sizeof(unsigned int))
-    markers = [0] * length  # Maybe not the most efficent way?
+    memset(markers, 0, length * sizeof(int))
 
     last = length - 1
     markers[first] = 1
@@ -84,7 +85,7 @@ cdef simplifyDouglasPeucker(list points, double tolerance):
         max_sqdist = 0
 
         for i in range(first, last):
-            sqdist = getSquareSegmentDistance(points[i], points[first], points[last])
+            sqdist = getSquareSegmentDistance(&points[i], &points[first], &points[last])
 
             if sqdist > max_sqdist:
                 index = i
@@ -113,9 +114,9 @@ cdef simplifyDouglasPeucker(list points, double tolerance):
 
     for i in range(length):
         if markers[i]:
-            pt = points[i]
+            pt = &points[i]
             new_points.append([pt.x, pt.y])
-
+    free(markers)
     return new_points
 
 
@@ -123,11 +124,16 @@ cpdef list simplify(list points, double tolerance=0.1, highestQuality=True):
     cdef double sqtolerance = tolerance * tolerance
     cdef list new_points = []
     cdef unsigned int i=0
+    cdef Py_ssize_t nb_pts = len(points)
+    cdef Point *pts = <Point *>malloc(nb_pts * sizeof(Point))
+    
     for i in range(len(points)):
-        points[i] = {'x': points[i][0], 'y': points[i][1]}
-    if not highestQuality:
-        new_points = simplifyRadialDistance(points, sqtolerance)
-    else:
-        new_points = simplifyDouglasPeucker(points, sqtolerance)
+        pts[i].x, pts[i].y = points[i]
 
+    if not highestQuality:
+        new_points = simplifyRadialDistance(pts, nb_pts, sqtolerance)
+    else:
+        new_points = simplifyDouglasPeucker(pts, nb_pts, sqtolerance)
+
+    free(pts)
     return new_points

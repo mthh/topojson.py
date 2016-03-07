@@ -23,4 +23,5 @@ setup(
     ext_modules=cythonize(exts),
     cmdclass = {'build_ext': build_ext},
     packages=find_packages(),
+    test_suite = 'tests',
 )
