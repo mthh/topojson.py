@@ -15,7 +15,7 @@ cdef class Transformer:
     cdef Scale_param scale
     cdef Trans_param translate
     cdef list arcs
-    def __init__(self, transform, arcs):
+    def __init__(self, dict transform, arcs):
         self.scale.x, self.scale.y = transform['scale']
         self.translate.x, self.translate.y = transform['translate']
         self.arcs = [self.convert_arc(a) for a in arcs]
@@ -28,13 +28,13 @@ cdef class Transformer:
             out_arc.append(self.convert_point(previous))
         return out_arc
 
-    cdef list reversed_arc(self,arc):
-        return list(map(None,reversed(self.arcs[~arc])))
+    cdef list reversed_arc(self, arc):
+        return list(reversed(self.arcs[~arc]))
 
     cdef list stitch_arcs(self, list arcs):
         cdef list line_string = []
         for arc in arcs:
-            if arc<0:
+            if arc < 0:
                 line = self.reversed_arc(arc)
             else:
                 line = self.arcs[arc]

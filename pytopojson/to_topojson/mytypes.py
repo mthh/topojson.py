@@ -10,7 +10,7 @@ GEOMETRY_TYPES = (
 )
 
 class Types:
-    def __init__(self,obj):
+    def __init__(self, obj):
         self.obj(obj)
     def Feature(self,feature):
         if 'geometry' in feature:

@@ -44,7 +44,6 @@ class TestTopojson(unittest.TestCase):
                          self.multipolygons_result['transform'])
         self.assertEqual(len(str(tj['arcs'])), len(str(self.multipolygons_result['arcs'])))
 
-
     def test_convert_equal_multiline_cartesian(self):
         tj = geo_to_topo(self.multilines, simplify=0.0001)
         name = list(tj['objects'].keys())[0]
@@ -75,6 +74,8 @@ class TestGeojson(unittest.TestCase):
             self.square_geojson = json.load(f)
         with open("tests/data/square.topojson") as f:
             self.square_topojson = json.load(f)
+        with open("tests/data/multipolygons_spherical.geojson") as f:
+            self.ref = json.load(f)
 
     def test_convert_back(self):
         square_back = topo_to_geo(self.square_topojson)
@@ -86,3 +87,11 @@ class TestGeojson(unittest.TestCase):
                            self.square_geojson['features'][0]['geometry']['coordinates'][0][2][0], 6)
         self.assertEqual(square_back['features'][0]['properties'],
                          self.square_geojson['features'][0]['properties'])
+
+    def test_extensive(self):
+        tj = geo_to_topo("tests/data/multipolygons_spherical.geojson",
+                         quantization=1e6)
+        geo_back = topo_to_geo(tj)
+        for i in range(len(self.ref['features'])):
+            self.assertEqual(len(geo_back['features'][i]['geometry']['coordinates']),
+                             len(self.ref['features'][i]['geometry']['coordinates']))

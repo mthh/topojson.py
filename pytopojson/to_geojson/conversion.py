@@ -14,7 +14,7 @@ def convert(topojson, input_name=None, geojson=None):
             with open(topojson) as in_file:
                 parsed_geojson = load(in_file)
         except:
-            parsed_geojson=loads(topojson)
+            parsed_geojson = loads(topojson)
 
     if input_name is None:
         input_name = list(parsed_geojson['objects'].keys())[0]
@@ -45,7 +45,7 @@ def from_topo(topo, obj_name):
         geojson = topo['objects'][obj_name]
     else:
         raise Exception(u"Something ain't right")
-    transformer = Transformer(topo['transform'],topo['arcs'])
+    transformer = Transformer(topo['transform'], topo['arcs'])
     if geojson['type'] in TYPEGEOMETRIES:
         geojson = transformer.geometry(geojson)
     return geojson

@@ -16,18 +16,20 @@ cdef class Hashtable:
 
     def __init__(self, double in_size):
         self.size = 1 << int(ceil(log(in_size)/log(2)))
-        self.table = [False]*int(in_size)
+        self.table = [False]*self.size
         self.mask = int(in_size) - 1
         self.h = self.retfunc
 
-    cpdef int retfunc(self, list point):
-        cdef int key
+    cpdef long retfunc(self, list point):
+        cdef long key
 #        if isinstance(point, list) and len(point) == 2:
         key = (int(point[0]) + 31 * int(point[1])) | 0
-        return (~key if key < 0 else key) & self.mask
+        return <long>(~key if key < 0 else key) & self.mask
 
     cpdef peak(self, list key):
         cdef Pair_i k = <Pair_i> key
+        cdef dict match
+
         matches = self.table[self.h(key)]
         if matches:
             for match in matches:
@@ -37,9 +39,14 @@ cdef class Hashtable:
 
     cpdef get(self, list key):
         cdef Pair_i k = <Pair_i> key
+        cdef long index
+        cdef list empty_values = []
+        cdef dict match
+
         index = self.h(key)
+
         if not index:
-            return []
+            return empty_values
         matches = self.table[index]
         if matches:
             for match in matches:
@@ -47,6 +54,6 @@ cdef class Hashtable:
                     return match['values']
         else:
             matches = self.table[index] = []
-        values = []
-        matches.append({'key': key, 'values': values})
-        return values
+        values = empty_values
+        matches.append({'key': key, 'values': empty_values})
+        return empty_values

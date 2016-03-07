@@ -491,7 +491,7 @@ struct __pyx_obj_10pytopojson_11to_topojson_9hashtable_Hashtable {
 
 
 struct __pyx_vtabstruct_10pytopojson_11to_topojson_9hashtable_Hashtable {
-  int (*retfunc)(struct __pyx_obj_10pytopojson_11to_topojson_9hashtable_Hashtable *, PyObject *, int __pyx_skip_dispatch);
+  long (*retfunc)(struct __pyx_obj_10pytopojson_11to_topojson_9hashtable_Hashtable *, PyObject *, int __pyx_skip_dispatch);
   PyObject *(*peak)(struct __pyx_obj_10pytopojson_11to_topojson_9hashtable_Hashtable *, PyObject *, int __pyx_skip_dispatch);
   PyObject *(*get)(struct __pyx_obj_10pytopojson_11to_topojson_9hashtable_Hashtable *, PyObject *, int __pyx_skip_dispatch);
 };
@@ -643,6 +643,35 @@ static CYTHON_INLINE int __Pyx_ArgTypeTest(PyObject *obj, PyTypeObject *type, in
 
 #include <string.h>
 
+#if PY_MAJOR_VERSION >= 3 && !CYTHON_COMPILING_IN_PYPY
+static PyObject *__Pyx_PyDict_GetItem(PyObject *d, PyObject* key) {
+    PyObject *value;
+    value = PyDict_GetItemWithError(d, key);
+    if (unlikely(!value)) {
+        if (!PyErr_Occurred()) {
+            PyObject* args = PyTuple_Pack(1, key);
+            if (likely(args))
+                PyErr_SetObject(PyExc_KeyError, args);
+            Py_XDECREF(args);
+        }
+        return NULL;
+    }
+    Py_INCREF(value);
+    return value;
+}
+#else
+    #define __Pyx_PyDict_GetItem(d, key) PyObject_GetItem(d, key)
+#endif
+
+#define __Pyx_SetItemInt(o, i, v, type, is_signed, to_py_func, is_list, wraparound, boundscheck)\
+    (__Pyx_fits_Py_ssize_t(i, type, is_signed) ?\
+    __Pyx_SetItemInt_Fast(o, (Py_ssize_t)i, v, is_list, wraparound, boundscheck) :\
+    (is_list ? (PyErr_SetString(PyExc_IndexError, "list assignment index out of range"), -1) :\
+               __Pyx_SetItemInt_Generic(o, to_py_func(i), v)))
+static CYTHON_INLINE int __Pyx_SetItemInt_Generic(PyObject *o, PyObject *j, PyObject *v);
+static CYTHON_INLINE int __Pyx_SetItemInt_Fast(PyObject *o, Py_ssize_t i, PyObject *v,
+                                               int is_list, int wraparound, int boundscheck);
+
 #if CYTHON_COMPILING_IN_CPYTHON
 static CYTHON_INLINE int __Pyx_PyList_Append(PyObject* list, PyObject* x) {
     PyListObject* L = (PyListObject*) list;
@@ -689,17 +718,15 @@ static void __Pyx_AddTraceback(const char *funcname, int c_line,
 
 static CYTHON_INLINE int __Pyx_PyInt_As_int(PyObject *);
 
-static CYTHON_INLINE PyObject* __Pyx_PyInt_From_long(long value);
-
-static CYTHON_INLINE PyObject* __Pyx_PyInt_From_int(int value);
-
 static CYTHON_INLINE long __Pyx_PyInt_As_long(PyObject *);
+
+static CYTHON_INLINE PyObject* __Pyx_PyInt_From_long(long value);
 
 static int __Pyx_check_binary_version(void);
 
 static int __Pyx_InitStrings(__Pyx_StringTabEntry *t);
 
-static int __pyx_f_10pytopojson_11to_topojson_9hashtable_9Hashtable_retfunc(struct __pyx_obj_10pytopojson_11to_topojson_9hashtable_Hashtable *__pyx_v_self, PyObject *__pyx_v_point, int __pyx_skip_dispatch); /* proto*/
+static long __pyx_f_10pytopojson_11to_topojson_9hashtable_9Hashtable_retfunc(struct __pyx_obj_10pytopojson_11to_topojson_9hashtable_Hashtable *__pyx_v_self, PyObject *__pyx_v_point, int __pyx_skip_dispatch); /* proto*/
 static PyObject *__pyx_f_10pytopojson_11to_topojson_9hashtable_9Hashtable_peak(struct __pyx_obj_10pytopojson_11to_topojson_9hashtable_Hashtable *__pyx_v_self, PyObject *__pyx_v_key, int __pyx_skip_dispatch); /* proto*/
 static PyObject *__pyx_f_10pytopojson_11to_topojson_9hashtable_9Hashtable_get(struct __pyx_obj_10pytopojson_11to_topojson_9hashtable_Hashtable *__pyx_v_self, PyObject *__pyx_v_key, int __pyx_skip_dispatch); /* proto*/
 
@@ -809,7 +836,7 @@ static CYTHON_INLINE int __pyx_f_10pytopojson_11to_topojson_9hashtable_equal(int
  * 
  *     def __init__(self, double in_size):             # <<<<<<<<<<<<<<
  *         self.size = 1 << int(ceil(log(in_size)/log(2)))
- *         self.table = [False]*int(in_size)
+ *         self.table = [False]*self.size
  */
 
 /* Python wrapper */
@@ -879,7 +906,7 @@ static int __pyx_pf_10pytopojson_11to_topojson_9hashtable_9Hashtable___init__(st
  * 
  *     def __init__(self, double in_size):
  *         self.size = 1 << int(ceil(log(in_size)/log(2)))             # <<<<<<<<<<<<<<
- *         self.table = [False]*int(in_size)
+ *         self.table = [False]*self.size
  *         self.mask = int(in_size) - 1
  */
   __pyx_t_1 = PyFloat_FromDouble(ceil((log(__pyx_v_in_size) / log(2.0)))); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 18; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
@@ -902,82 +929,70 @@ static int __pyx_pf_10pytopojson_11to_topojson_9hashtable_9Hashtable___init__(st
   /* "pytopojson/to_topojson/hashtable.pyx":19
  *     def __init__(self, double in_size):
  *         self.size = 1 << int(ceil(log(in_size)/log(2)))
- *         self.table = [False]*int(in_size)             # <<<<<<<<<<<<<<
+ *         self.table = [False]*self.size             # <<<<<<<<<<<<<<
  *         self.mask = int(in_size) - 1
  *         self.h = self.retfunc
  */
-  __pyx_t_2 = PyFloat_FromDouble(__pyx_v_in_size); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 19; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_2 = PyList_New(1 * ((__pyx_v_self->size<0) ? 0:__pyx_v_self->size)); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 19; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_1 = PyTuple_New(1); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 19; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __Pyx_GOTREF(__pyx_t_1);
-  __Pyx_GIVEREF(__pyx_t_2);
-  PyTuple_SET_ITEM(__pyx_t_1, 0, __pyx_t_2);
-  __pyx_t_2 = 0;
-  __pyx_t_2 = __Pyx_PyObject_Call(((PyObject *)(&PyInt_Type)), __pyx_t_1, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 19; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __Pyx_GOTREF(__pyx_t_2);
-  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_1 = PyList_New(1); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 19; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __Pyx_GOTREF(__pyx_t_1);
-  __Pyx_INCREF(Py_False);
-  __Pyx_GIVEREF(Py_False);
-  PyList_SET_ITEM(__pyx_t_1, 0, Py_False);
-  { PyObject* __pyx_temp = PyNumber_InPlaceMultiply(__pyx_t_1, __pyx_t_2); if (unlikely(!__pyx_temp)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 19; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    __Pyx_GOTREF(__pyx_temp);
-    __Pyx_DECREF(__pyx_t_1);
-    __pyx_t_1 = __pyx_temp;
+  { Py_ssize_t __pyx_temp;
+    for (__pyx_temp=0; __pyx_temp < __pyx_v_self->size; __pyx_temp++) {
+      __Pyx_INCREF(Py_False);
+      __Pyx_GIVEREF(Py_False);
+      PyList_SET_ITEM(__pyx_t_2, __pyx_temp, Py_False);
+    }
   }
-  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __Pyx_GIVEREF(__pyx_t_1);
+  __Pyx_GIVEREF(__pyx_t_2);
   __Pyx_GOTREF(__pyx_v_self->table);
   __Pyx_DECREF(__pyx_v_self->table);
-  __pyx_v_self->table = ((PyObject*)__pyx_t_1);
-  __pyx_t_1 = 0;
+  __pyx_v_self->table = ((PyObject*)__pyx_t_2);
+  __pyx_t_2 = 0;
 
   /* "pytopojson/to_topojson/hashtable.pyx":20
  *         self.size = 1 << int(ceil(log(in_size)/log(2)))
- *         self.table = [False]*int(in_size)
+ *         self.table = [False]*self.size
  *         self.mask = int(in_size) - 1             # <<<<<<<<<<<<<<
  *         self.h = self.retfunc
  * 
  */
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_in_size); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 20; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = PyTuple_New(1); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 20; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_2 = PyFloat_FromDouble(__pyx_v_in_size); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 20; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_2);
-  __Pyx_GIVEREF(__pyx_t_1);
-  PyTuple_SET_ITEM(__pyx_t_2, 0, __pyx_t_1);
-  __pyx_t_1 = 0;
-  __pyx_t_1 = __Pyx_PyObject_Call(((PyObject *)(&PyInt_Type)), __pyx_t_2, NULL); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 20; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = PyTuple_New(1); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 20; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
-  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_2 = __Pyx_PyInt_SubtractObjC(__pyx_t_1, __pyx_int_1, 1, 0); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 20; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GIVEREF(__pyx_t_2);
+  PyTuple_SET_ITEM(__pyx_t_1, 0, __pyx_t_2);
+  __pyx_t_2 = 0;
+  __pyx_t_2 = __Pyx_PyObject_Call(((PyObject *)(&PyInt_Type)), __pyx_t_1, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 20; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_3 = __Pyx_PyInt_As_int(__pyx_t_2); if (unlikely((__pyx_t_3 == (int)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 20; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = __Pyx_PyInt_SubtractObjC(__pyx_t_2, __pyx_int_1, 1, 0); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 20; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  __pyx_t_3 = __Pyx_PyInt_As_int(__pyx_t_1); if (unlikely((__pyx_t_3 == (int)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 20; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_v_self->mask = __pyx_t_3;
 
   /* "pytopojson/to_topojson/hashtable.pyx":21
- *         self.table = [False]*int(in_size)
+ *         self.table = [False]*self.size
  *         self.mask = int(in_size) - 1
  *         self.h = self.retfunc             # <<<<<<<<<<<<<<
  * 
- *     cpdef int retfunc(self, list point):
+ *     cpdef long retfunc(self, list point):
  */
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_retfunc); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 21; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __Pyx_GOTREF(__pyx_t_2);
-  __Pyx_GIVEREF(__pyx_t_2);
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_retfunc); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 21; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_GIVEREF(__pyx_t_1);
   __Pyx_GOTREF(__pyx_v_self->h);
   __Pyx_DECREF(__pyx_v_self->h);
-  __pyx_v_self->h = __pyx_t_2;
-  __pyx_t_2 = 0;
+  __pyx_v_self->h = __pyx_t_1;
+  __pyx_t_1 = 0;
 
   /* "pytopojson/to_topojson/hashtable.pyx":17
  *     cdef object h
  * 
  *     def __init__(self, double in_size):             # <<<<<<<<<<<<<<
  *         self.size = 1 << int(ceil(log(in_size)/log(2)))
- *         self.table = [False]*int(in_size)
+ *         self.table = [False]*self.size
  */
 
   /* function exit code */
@@ -996,22 +1011,22 @@ static int __pyx_pf_10pytopojson_11to_topojson_9hashtable_9Hashtable___init__(st
 /* "pytopojson/to_topojson/hashtable.pyx":23
  *         self.h = self.retfunc
  * 
- *     cpdef int retfunc(self, list point):             # <<<<<<<<<<<<<<
- *         cdef int key
+ *     cpdef long retfunc(self, list point):             # <<<<<<<<<<<<<<
+ *         cdef long key
  * #        if isinstance(point, list) and len(point) == 2:
  */
 
 static PyObject *__pyx_pw_10pytopojson_11to_topojson_9hashtable_9Hashtable_3retfunc(PyObject *__pyx_v_self, PyObject *__pyx_v_point); /*proto*/
-static int __pyx_f_10pytopojson_11to_topojson_9hashtable_9Hashtable_retfunc(struct __pyx_obj_10pytopojson_11to_topojson_9hashtable_Hashtable *__pyx_v_self, PyObject *__pyx_v_point, int __pyx_skip_dispatch) {
-  int __pyx_v_key;
-  int __pyx_r;
+static long __pyx_f_10pytopojson_11to_topojson_9hashtable_9Hashtable_retfunc(struct __pyx_obj_10pytopojson_11to_topojson_9hashtable_Hashtable *__pyx_v_self, PyObject *__pyx_v_point, int __pyx_skip_dispatch) {
+  long __pyx_v_key;
+  long __pyx_r;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
   PyObject *__pyx_t_2 = NULL;
   PyObject *__pyx_t_3 = NULL;
   PyObject *__pyx_t_4 = NULL;
   PyObject *__pyx_t_5 = NULL;
-  int __pyx_t_6;
+  long __pyx_t_6;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
@@ -1049,7 +1064,7 @@ static int __pyx_f_10pytopojson_11to_topojson_9hashtable_9Hashtable_retfunc(stru
         __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
       }
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-      __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_t_2); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 23; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_6 = __Pyx_PyInt_As_long(__pyx_t_2); if (unlikely((__pyx_t_6 == (long)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 23; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
       __pyx_r = __pyx_t_6;
       __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -1059,10 +1074,10 @@ static int __pyx_f_10pytopojson_11to_topojson_9hashtable_9Hashtable_retfunc(stru
   }
 
   /* "pytopojson/to_topojson/hashtable.pyx":26
- *         cdef int key
+ *         cdef long key
  * #        if isinstance(point, list) and len(point) == 2:
  *         key = (int(point[0]) + 31 * int(point[1])) | 0             # <<<<<<<<<<<<<<
- *         return (~key if key < 0 else key) & self.mask
+ *         return <long>(~key if key < 0 else key) & self.mask
  * 
  */
   if (unlikely(__pyx_v_point == Py_None)) {
@@ -1093,14 +1108,14 @@ static int __pyx_f_10pytopojson_11to_topojson_9hashtable_9Hashtable_retfunc(stru
   __pyx_t_1 = __Pyx_PyInt_OrObjC(__pyx_t_3, __pyx_int_0, 0, 0); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 26; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_t_1); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 26; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_6 = __Pyx_PyInt_As_long(__pyx_t_1); if (unlikely((__pyx_t_6 == (long)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 26; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_v_key = __pyx_t_6;
 
   /* "pytopojson/to_topojson/hashtable.pyx":27
  * #        if isinstance(point, list) and len(point) == 2:
  *         key = (int(point[0]) + 31 * int(point[1])) | 0
- *         return (~key if key < 0 else key) & self.mask             # <<<<<<<<<<<<<<
+ *         return <long>(~key if key < 0 else key) & self.mask             # <<<<<<<<<<<<<<
  * 
  *     cpdef peak(self, list key):
  */
@@ -1109,14 +1124,14 @@ static int __pyx_f_10pytopojson_11to_topojson_9hashtable_9Hashtable_retfunc(stru
   } else {
     __pyx_t_6 = __pyx_v_key;
   }
-  __pyx_r = (__pyx_t_6 & __pyx_v_self->mask);
+  __pyx_r = (((long)__pyx_t_6) & __pyx_v_self->mask);
   goto __pyx_L0;
 
   /* "pytopojson/to_topojson/hashtable.pyx":23
  *         self.h = self.retfunc
  * 
- *     cpdef int retfunc(self, list point):             # <<<<<<<<<<<<<<
- *         cdef int key
+ *     cpdef long retfunc(self, list point):             # <<<<<<<<<<<<<<
+ *         cdef long key
  * #        if isinstance(point, list) and len(point) == 2:
  */
 
@@ -1164,7 +1179,7 @@ static PyObject *__pyx_pf_10pytopojson_11to_topojson_9hashtable_9Hashtable_2retf
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("retfunc", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyInt_From_int(__pyx_f_10pytopojson_11to_topojson_9hashtable_9Hashtable_retfunc(__pyx_v_self, __pyx_v_point, 1)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 23; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = __Pyx_PyInt_From_long(__pyx_f_10pytopojson_11to_topojson_9hashtable_9Hashtable_retfunc(__pyx_v_self, __pyx_v_point, 1)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 23; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -1182,18 +1197,18 @@ static PyObject *__pyx_pf_10pytopojson_11to_topojson_9hashtable_9Hashtable_2retf
 }
 
 /* "pytopojson/to_topojson/hashtable.pyx":29
- *         return (~key if key < 0 else key) & self.mask
+ *         return <long>(~key if key < 0 else key) & self.mask
  * 
  *     cpdef peak(self, list key):             # <<<<<<<<<<<<<<
  *         cdef Pair_i k = <Pair_i> key
- *         matches = self.table[self.h(key)]
+ *         cdef dict match
  */
 
 static PyObject *__pyx_pw_10pytopojson_11to_topojson_9hashtable_9Hashtable_5peak(PyObject *__pyx_v_self, PyObject *__pyx_v_key); /*proto*/
 static PyObject *__pyx_f_10pytopojson_11to_topojson_9hashtable_9Hashtable_peak(struct __pyx_obj_10pytopojson_11to_topojson_9hashtable_Hashtable *__pyx_v_self, PyObject *__pyx_v_key, int __pyx_skip_dispatch) {
   __pyx_t_10pytopojson_11to_topojson_9hashtable_Pair_i __pyx_v_k;
+  PyObject *__pyx_v_match = 0;
   PyObject *__pyx_v_matches = NULL;
-  PyObject *__pyx_v_match = NULL;
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -1255,22 +1270,22 @@ static PyObject *__pyx_f_10pytopojson_11to_topojson_9hashtable_9Hashtable_peak(s
  * 
  *     cpdef peak(self, list key):
  *         cdef Pair_i k = <Pair_i> key             # <<<<<<<<<<<<<<
- *         matches = self.table[self.h(key)]
- *         if matches:
+ *         cdef dict match
+ * 
  */
   if (unlikely(__Pyx_carray_from_py_int(__pyx_v_key, __pyx_t_6, 2) < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 30; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   memcpy(&(__pyx_v_k[0]), ((int *)__pyx_t_6), sizeof(__pyx_v_k[0]) * (2));
 
-  /* "pytopojson/to_topojson/hashtable.pyx":31
- *     cpdef peak(self, list key):
- *         cdef Pair_i k = <Pair_i> key
+  /* "pytopojson/to_topojson/hashtable.pyx":33
+ *         cdef dict match
+ * 
  *         matches = self.table[self.h(key)]             # <<<<<<<<<<<<<<
  *         if matches:
  *             for match in matches:
  */
   if (unlikely(__pyx_v_self->table == Py_None)) {
     PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
-    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 31; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 33; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   }
   __Pyx_INCREF(__pyx_v_self->h);
   __pyx_t_2 = __pyx_v_self->h; __pyx_t_3 = NULL;
@@ -1284,37 +1299,37 @@ static PyObject *__pyx_f_10pytopojson_11to_topojson_9hashtable_9Hashtable_peak(s
     }
   }
   if (!__pyx_t_3) {
-    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_v_key); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 31; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_v_key); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 33; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_1);
   } else {
-    __pyx_t_5 = PyTuple_New(1+1); if (unlikely(!__pyx_t_5)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 31; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_5 = PyTuple_New(1+1); if (unlikely(!__pyx_t_5)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 33; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_5);
     __Pyx_GIVEREF(__pyx_t_3); PyTuple_SET_ITEM(__pyx_t_5, 0, __pyx_t_3); __pyx_t_3 = NULL;
     __Pyx_INCREF(__pyx_v_key);
     __Pyx_GIVEREF(__pyx_v_key);
     PyTuple_SET_ITEM(__pyx_t_5, 0+1, __pyx_v_key);
-    __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_t_5, NULL); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 31; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_t_5, NULL); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 33; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
   }
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_2 = PyObject_GetItem(__pyx_v_self->table, __pyx_t_1); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 31; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  __pyx_t_2 = PyObject_GetItem(__pyx_v_self->table, __pyx_t_1); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 33; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_v_matches = __pyx_t_2;
   __pyx_t_2 = 0;
 
-  /* "pytopojson/to_topojson/hashtable.pyx":32
- *         cdef Pair_i k = <Pair_i> key
+  /* "pytopojson/to_topojson/hashtable.pyx":34
+ * 
  *         matches = self.table[self.h(key)]
  *         if matches:             # <<<<<<<<<<<<<<
  *             for match in matches:
  *                 if equal(<Pair_i>match['key'], k):
  */
-  __pyx_t_7 = __Pyx_PyObject_IsTrue(__pyx_v_matches); if (unlikely(__pyx_t_7 < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 32; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_7 = __Pyx_PyObject_IsTrue(__pyx_v_matches); if (unlikely(__pyx_t_7 < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 34; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   if (__pyx_t_7) {
 
-    /* "pytopojson/to_topojson/hashtable.pyx":33
+    /* "pytopojson/to_topojson/hashtable.pyx":35
  *         matches = self.table[self.h(key)]
  *         if matches:
  *             for match in matches:             # <<<<<<<<<<<<<<
@@ -1325,26 +1340,26 @@ static PyObject *__pyx_f_10pytopojson_11to_topojson_9hashtable_9Hashtable_peak(s
       __pyx_t_2 = __pyx_v_matches; __Pyx_INCREF(__pyx_t_2); __pyx_t_8 = 0;
       __pyx_t_9 = NULL;
     } else {
-      __pyx_t_8 = -1; __pyx_t_2 = PyObject_GetIter(__pyx_v_matches); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 33; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_8 = -1; __pyx_t_2 = PyObject_GetIter(__pyx_v_matches); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 35; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_GOTREF(__pyx_t_2);
-      __pyx_t_9 = Py_TYPE(__pyx_t_2)->tp_iternext; if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 33; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_9 = Py_TYPE(__pyx_t_2)->tp_iternext; if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 35; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     }
     for (;;) {
       if (likely(!__pyx_t_9)) {
         if (likely(PyList_CheckExact(__pyx_t_2))) {
           if (__pyx_t_8 >= PyList_GET_SIZE(__pyx_t_2)) break;
           #if CYTHON_COMPILING_IN_CPYTHON
-          __pyx_t_1 = PyList_GET_ITEM(__pyx_t_2, __pyx_t_8); __Pyx_INCREF(__pyx_t_1); __pyx_t_8++; if (unlikely(0 < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 33; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+          __pyx_t_1 = PyList_GET_ITEM(__pyx_t_2, __pyx_t_8); __Pyx_INCREF(__pyx_t_1); __pyx_t_8++; if (unlikely(0 < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 35; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
           #else
-          __pyx_t_1 = PySequence_ITEM(__pyx_t_2, __pyx_t_8); __pyx_t_8++; if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 33; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+          __pyx_t_1 = PySequence_ITEM(__pyx_t_2, __pyx_t_8); __pyx_t_8++; if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 35; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
           __Pyx_GOTREF(__pyx_t_1);
           #endif
         } else {
           if (__pyx_t_8 >= PyTuple_GET_SIZE(__pyx_t_2)) break;
           #if CYTHON_COMPILING_IN_CPYTHON
-          __pyx_t_1 = PyTuple_GET_ITEM(__pyx_t_2, __pyx_t_8); __Pyx_INCREF(__pyx_t_1); __pyx_t_8++; if (unlikely(0 < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 33; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+          __pyx_t_1 = PyTuple_GET_ITEM(__pyx_t_2, __pyx_t_8); __Pyx_INCREF(__pyx_t_1); __pyx_t_8++; if (unlikely(0 < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 35; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
           #else
-          __pyx_t_1 = PySequence_ITEM(__pyx_t_2, __pyx_t_8); __pyx_t_8++; if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 33; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+          __pyx_t_1 = PySequence_ITEM(__pyx_t_2, __pyx_t_8); __pyx_t_8++; if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 35; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
           __Pyx_GOTREF(__pyx_t_1);
           #endif
         }
@@ -1354,30 +1369,35 @@ static PyObject *__pyx_f_10pytopojson_11to_topojson_9hashtable_9Hashtable_peak(s
           PyObject* exc_type = PyErr_Occurred();
           if (exc_type) {
             if (likely(exc_type == PyExc_StopIteration || PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
-            else {__pyx_filename = __pyx_f[0]; __pyx_lineno = 33; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+            else {__pyx_filename = __pyx_f[0]; __pyx_lineno = 35; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
           }
           break;
         }
         __Pyx_GOTREF(__pyx_t_1);
       }
-      __Pyx_XDECREF_SET(__pyx_v_match, __pyx_t_1);
+      if (!(likely(PyDict_CheckExact(__pyx_t_1))||((__pyx_t_1) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "dict", Py_TYPE(__pyx_t_1)->tp_name), 0))) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 35; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __Pyx_XDECREF_SET(__pyx_v_match, ((PyObject*)__pyx_t_1));
       __pyx_t_1 = 0;
 
-      /* "pytopojson/to_topojson/hashtable.pyx":34
+      /* "pytopojson/to_topojson/hashtable.pyx":36
  *         if matches:
  *             for match in matches:
  *                 if equal(<Pair_i>match['key'], k):             # <<<<<<<<<<<<<<
  *                     return match['values']
  *         return None
  */
-      __pyx_t_1 = PyObject_GetItem(__pyx_v_match, __pyx_n_s_key); if (unlikely(__pyx_t_1 == NULL)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 34; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+      if (unlikely(__pyx_v_match == Py_None)) {
+        PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
+        {__pyx_filename = __pyx_f[0]; __pyx_lineno = 36; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      }
+      __pyx_t_1 = __Pyx_PyDict_GetItem(__pyx_v_match, __pyx_n_s_key); if (unlikely(__pyx_t_1 == NULL)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 36; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
       __Pyx_GOTREF(__pyx_t_1);
-      if (unlikely(__Pyx_carray_from_py_int(__pyx_t_1, __pyx_t_6, 2) < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 34; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      if (unlikely(__Pyx_carray_from_py_int(__pyx_t_1, __pyx_t_6, 2) < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 36; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
       __pyx_t_7 = (__pyx_f_10pytopojson_11to_topojson_9hashtable_equal(((int *)__pyx_t_6), __pyx_v_k) != 0);
       if (__pyx_t_7) {
 
-        /* "pytopojson/to_topojson/hashtable.pyx":35
+        /* "pytopojson/to_topojson/hashtable.pyx":37
  *             for match in matches:
  *                 if equal(<Pair_i>match['key'], k):
  *                     return match['values']             # <<<<<<<<<<<<<<
@@ -1385,14 +1405,18 @@ static PyObject *__pyx_f_10pytopojson_11to_topojson_9hashtable_9Hashtable_peak(s
  * 
  */
         __Pyx_XDECREF(__pyx_r);
-        __pyx_t_1 = PyObject_GetItem(__pyx_v_match, __pyx_n_s_values); if (unlikely(__pyx_t_1 == NULL)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 35; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+        if (unlikely(__pyx_v_match == Py_None)) {
+          PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
+          {__pyx_filename = __pyx_f[0]; __pyx_lineno = 37; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        }
+        __pyx_t_1 = __Pyx_PyDict_GetItem(__pyx_v_match, __pyx_n_s_values); if (unlikely(__pyx_t_1 == NULL)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 37; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
         __Pyx_GOTREF(__pyx_t_1);
         __pyx_r = __pyx_t_1;
         __pyx_t_1 = 0;
         __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
         goto __pyx_L0;
 
-        /* "pytopojson/to_topojson/hashtable.pyx":34
+        /* "pytopojson/to_topojson/hashtable.pyx":36
  *         if matches:
  *             for match in matches:
  *                 if equal(<Pair_i>match['key'], k):             # <<<<<<<<<<<<<<
@@ -1401,7 +1425,7 @@ static PyObject *__pyx_f_10pytopojson_11to_topojson_9hashtable_9Hashtable_peak(s
  */
       }
 
-      /* "pytopojson/to_topojson/hashtable.pyx":33
+      /* "pytopojson/to_topojson/hashtable.pyx":35
  *         matches = self.table[self.h(key)]
  *         if matches:
  *             for match in matches:             # <<<<<<<<<<<<<<
@@ -1411,8 +1435,8 @@ static PyObject *__pyx_f_10pytopojson_11to_topojson_9hashtable_9Hashtable_peak(s
     }
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
-    /* "pytopojson/to_topojson/hashtable.pyx":32
- *         cdef Pair_i k = <Pair_i> key
+    /* "pytopojson/to_topojson/hashtable.pyx":34
+ * 
  *         matches = self.table[self.h(key)]
  *         if matches:             # <<<<<<<<<<<<<<
  *             for match in matches:
@@ -1420,7 +1444,7 @@ static PyObject *__pyx_f_10pytopojson_11to_topojson_9hashtable_9Hashtable_peak(s
  */
   }
 
-  /* "pytopojson/to_topojson/hashtable.pyx":36
+  /* "pytopojson/to_topojson/hashtable.pyx":38
  *                 if equal(<Pair_i>match['key'], k):
  *                     return match['values']
  *         return None             # <<<<<<<<<<<<<<
@@ -1433,11 +1457,11 @@ static PyObject *__pyx_f_10pytopojson_11to_topojson_9hashtable_9Hashtable_peak(s
   goto __pyx_L0;
 
   /* "pytopojson/to_topojson/hashtable.pyx":29
- *         return (~key if key < 0 else key) & self.mask
+ *         return <long>(~key if key < 0 else key) & self.mask
  * 
  *     cpdef peak(self, list key):             # <<<<<<<<<<<<<<
  *         cdef Pair_i k = <Pair_i> key
- *         matches = self.table[self.h(key)]
+ *         cdef dict match
  */
 
   /* function exit code */
@@ -1450,8 +1474,8 @@ static PyObject *__pyx_f_10pytopojson_11to_topojson_9hashtable_9Hashtable_peak(s
   __Pyx_AddTraceback("pytopojson.to_topojson.hashtable.Hashtable.peak", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = 0;
   __pyx_L0:;
-  __Pyx_XDECREF(__pyx_v_matches);
   __Pyx_XDECREF(__pyx_v_match);
+  __Pyx_XDECREF(__pyx_v_matches);
   __Pyx_XGIVEREF(__pyx_r);
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
@@ -1504,21 +1528,22 @@ static PyObject *__pyx_pf_10pytopojson_11to_topojson_9hashtable_9Hashtable_4peak
   return __pyx_r;
 }
 
-/* "pytopojson/to_topojson/hashtable.pyx":38
+/* "pytopojson/to_topojson/hashtable.pyx":40
  *         return None
  * 
  *     cpdef get(self, list key):             # <<<<<<<<<<<<<<
  *         cdef Pair_i k = <Pair_i> key
- *         index = self.h(key)
+ *         cdef long index
  */
 
 static PyObject *__pyx_pw_10pytopojson_11to_topojson_9hashtable_9Hashtable_7get(PyObject *__pyx_v_self, PyObject *__pyx_v_key); /*proto*/
 static PyObject *__pyx_f_10pytopojson_11to_topojson_9hashtable_9Hashtable_get(struct __pyx_obj_10pytopojson_11to_topojson_9hashtable_Hashtable *__pyx_v_self, PyObject *__pyx_v_key, int __pyx_skip_dispatch) {
   __pyx_t_10pytopojson_11to_topojson_9hashtable_Pair_i __pyx_v_k;
-  PyObject *__pyx_v_index = NULL;
+  long __pyx_v_index;
+  PyObject *__pyx_v_empty_values = 0;
+  PyObject *__pyx_v_match = 0;
   PyObject *__pyx_v_matches = NULL;
-  PyObject *__pyx_v_match = NULL;
-  PyObject *__pyx_v_values = NULL;
+  CYTHON_UNUSED PyObject *__pyx_v_values = NULL;
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -1527,7 +1552,7 @@ static PyObject *__pyx_f_10pytopojson_11to_topojson_9hashtable_9Hashtable_get(st
   PyObject *__pyx_t_4 = NULL;
   PyObject *__pyx_t_5 = NULL;
   __pyx_t_10pytopojson_11to_topojson_9hashtable_Pair_i __pyx_t_6;
-  int __pyx_t_7;
+  long __pyx_t_7;
   int __pyx_t_8;
   Py_ssize_t __pyx_t_9;
   PyObject *(*__pyx_t_10)(PyObject *);
@@ -1540,7 +1565,7 @@ static PyObject *__pyx_f_10pytopojson_11to_topojson_9hashtable_9Hashtable_get(st
   if (unlikely(__pyx_skip_dispatch)) ;
   /* Check if overridden in Python */
   else if (unlikely(Py_TYPE(((PyObject *)__pyx_v_self))->tp_dictoffset != 0)) {
-    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_get); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 38; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_get); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 40; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_1);
     if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)__pyx_pw_10pytopojson_11to_topojson_9hashtable_9Hashtable_7get)) {
       __Pyx_XDECREF(__pyx_r);
@@ -1556,16 +1581,16 @@ static PyObject *__pyx_f_10pytopojson_11to_topojson_9hashtable_9Hashtable_get(st
         }
       }
       if (!__pyx_t_4) {
-        __pyx_t_2 = __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_v_key); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 38; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        __pyx_t_2 = __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_v_key); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 40; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
         __Pyx_GOTREF(__pyx_t_2);
       } else {
-        __pyx_t_5 = PyTuple_New(1+1); if (unlikely(!__pyx_t_5)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 38; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        __pyx_t_5 = PyTuple_New(1+1); if (unlikely(!__pyx_t_5)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 40; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
         __Pyx_GOTREF(__pyx_t_5);
         __Pyx_GIVEREF(__pyx_t_4); PyTuple_SET_ITEM(__pyx_t_5, 0, __pyx_t_4); __pyx_t_4 = NULL;
         __Pyx_INCREF(__pyx_v_key);
         __Pyx_GIVEREF(__pyx_v_key);
         PyTuple_SET_ITEM(__pyx_t_5, 0+1, __pyx_v_key);
-        __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_3, __pyx_t_5, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 38; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_3, __pyx_t_5, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 40; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
         __Pyx_GOTREF(__pyx_t_2);
         __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
       }
@@ -1578,22 +1603,34 @@ static PyObject *__pyx_f_10pytopojson_11to_topojson_9hashtable_9Hashtable_get(st
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   }
 
-  /* "pytopojson/to_topojson/hashtable.pyx":39
+  /* "pytopojson/to_topojson/hashtable.pyx":41
  * 
  *     cpdef get(self, list key):
  *         cdef Pair_i k = <Pair_i> key             # <<<<<<<<<<<<<<
- *         index = self.h(key)
- *         if not index:
+ *         cdef long index
+ *         cdef list empty_values = []
  */
-  if (unlikely(__Pyx_carray_from_py_int(__pyx_v_key, __pyx_t_6, 2) < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 39; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  if (unlikely(__Pyx_carray_from_py_int(__pyx_v_key, __pyx_t_6, 2) < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 41; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   memcpy(&(__pyx_v_k[0]), ((int *)__pyx_t_6), sizeof(__pyx_v_k[0]) * (2));
 
-  /* "pytopojson/to_topojson/hashtable.pyx":40
- *     cpdef get(self, list key):
+  /* "pytopojson/to_topojson/hashtable.pyx":43
  *         cdef Pair_i k = <Pair_i> key
+ *         cdef long index
+ *         cdef list empty_values = []             # <<<<<<<<<<<<<<
+ *         cdef dict match
+ * 
+ */
+  __pyx_t_1 = PyList_New(0); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 43; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_v_empty_values = ((PyObject*)__pyx_t_1);
+  __pyx_t_1 = 0;
+
+  /* "pytopojson/to_topojson/hashtable.pyx":46
+ *         cdef dict match
+ * 
  *         index = self.h(key)             # <<<<<<<<<<<<<<
+ * 
  *         if not index:
- *             return []
  */
   __Pyx_INCREF(__pyx_v_self->h);
   __pyx_t_2 = __pyx_v_self->h; __pyx_t_3 = NULL;
@@ -1607,84 +1644,82 @@ static PyObject *__pyx_f_10pytopojson_11to_topojson_9hashtable_9Hashtable_get(st
     }
   }
   if (!__pyx_t_3) {
-    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_v_key); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 40; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_v_key); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 46; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_1);
   } else {
-    __pyx_t_5 = PyTuple_New(1+1); if (unlikely(!__pyx_t_5)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 40; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_5 = PyTuple_New(1+1); if (unlikely(!__pyx_t_5)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 46; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_5);
     __Pyx_GIVEREF(__pyx_t_3); PyTuple_SET_ITEM(__pyx_t_5, 0, __pyx_t_3); __pyx_t_3 = NULL;
     __Pyx_INCREF(__pyx_v_key);
     __Pyx_GIVEREF(__pyx_v_key);
     PyTuple_SET_ITEM(__pyx_t_5, 0+1, __pyx_v_key);
-    __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_t_5, NULL); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 40; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_t_5, NULL); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 46; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
   }
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_v_index = __pyx_t_1;
-  __pyx_t_1 = 0;
+  __pyx_t_7 = __Pyx_PyInt_As_long(__pyx_t_1); if (unlikely((__pyx_t_7 == (long)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 46; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_v_index = __pyx_t_7;
 
-  /* "pytopojson/to_topojson/hashtable.pyx":41
- *         cdef Pair_i k = <Pair_i> key
+  /* "pytopojson/to_topojson/hashtable.pyx":48
  *         index = self.h(key)
+ * 
  *         if not index:             # <<<<<<<<<<<<<<
- *             return []
+ *             return empty_values
  *         matches = self.table[index]
  */
-  __pyx_t_7 = __Pyx_PyObject_IsTrue(__pyx_v_index); if (unlikely(__pyx_t_7 < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 41; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __pyx_t_8 = ((!__pyx_t_7) != 0);
+  __pyx_t_8 = ((!(__pyx_v_index != 0)) != 0);
   if (__pyx_t_8) {
 
-    /* "pytopojson/to_topojson/hashtable.pyx":42
- *         index = self.h(key)
+    /* "pytopojson/to_topojson/hashtable.pyx":49
+ * 
  *         if not index:
- *             return []             # <<<<<<<<<<<<<<
+ *             return empty_values             # <<<<<<<<<<<<<<
  *         matches = self.table[index]
  *         if matches:
  */
     __Pyx_XDECREF(__pyx_r);
-    __pyx_t_1 = PyList_New(0); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 42; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    __Pyx_GOTREF(__pyx_t_1);
-    __pyx_r = __pyx_t_1;
-    __pyx_t_1 = 0;
+    __Pyx_INCREF(__pyx_v_empty_values);
+    __pyx_r = __pyx_v_empty_values;
     goto __pyx_L0;
 
-    /* "pytopojson/to_topojson/hashtable.pyx":41
- *         cdef Pair_i k = <Pair_i> key
+    /* "pytopojson/to_topojson/hashtable.pyx":48
  *         index = self.h(key)
+ * 
  *         if not index:             # <<<<<<<<<<<<<<
- *             return []
+ *             return empty_values
  *         matches = self.table[index]
  */
   }
 
-  /* "pytopojson/to_topojson/hashtable.pyx":43
+  /* "pytopojson/to_topojson/hashtable.pyx":50
  *         if not index:
- *             return []
+ *             return empty_values
  *         matches = self.table[index]             # <<<<<<<<<<<<<<
  *         if matches:
  *             for match in matches:
  */
   if (unlikely(__pyx_v_self->table == Py_None)) {
     PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
-    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 43; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 50; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   }
-  __pyx_t_1 = PyObject_GetItem(__pyx_v_self->table, __pyx_v_index); if (unlikely(__pyx_t_1 == NULL)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 43; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  __pyx_t_1 = __Pyx_GetItemInt_List(__pyx_v_self->table, __pyx_v_index, long, 1, __Pyx_PyInt_From_long, 1, 1, 1); if (unlikely(__pyx_t_1 == NULL)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 50; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_v_matches = __pyx_t_1;
   __pyx_t_1 = 0;
 
-  /* "pytopojson/to_topojson/hashtable.pyx":44
- *             return []
+  /* "pytopojson/to_topojson/hashtable.pyx":51
+ *             return empty_values
  *         matches = self.table[index]
  *         if matches:             # <<<<<<<<<<<<<<
  *             for match in matches:
  *                 if equal(<Pair_i>match['key'], k):
  */
-  __pyx_t_8 = __Pyx_PyObject_IsTrue(__pyx_v_matches); if (unlikely(__pyx_t_8 < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 44; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_8 = __Pyx_PyObject_IsTrue(__pyx_v_matches); if (unlikely(__pyx_t_8 < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 51; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   if (__pyx_t_8) {
 
-    /* "pytopojson/to_topojson/hashtable.pyx":45
+    /* "pytopojson/to_topojson/hashtable.pyx":52
  *         matches = self.table[index]
  *         if matches:
  *             for match in matches:             # <<<<<<<<<<<<<<
@@ -1695,26 +1730,26 @@ static PyObject *__pyx_f_10pytopojson_11to_topojson_9hashtable_9Hashtable_get(st
       __pyx_t_1 = __pyx_v_matches; __Pyx_INCREF(__pyx_t_1); __pyx_t_9 = 0;
       __pyx_t_10 = NULL;
     } else {
-      __pyx_t_9 = -1; __pyx_t_1 = PyObject_GetIter(__pyx_v_matches); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 45; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_9 = -1; __pyx_t_1 = PyObject_GetIter(__pyx_v_matches); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 52; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_GOTREF(__pyx_t_1);
-      __pyx_t_10 = Py_TYPE(__pyx_t_1)->tp_iternext; if (unlikely(!__pyx_t_10)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 45; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_10 = Py_TYPE(__pyx_t_1)->tp_iternext; if (unlikely(!__pyx_t_10)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 52; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     }
     for (;;) {
       if (likely(!__pyx_t_10)) {
         if (likely(PyList_CheckExact(__pyx_t_1))) {
           if (__pyx_t_9 >= PyList_GET_SIZE(__pyx_t_1)) break;
           #if CYTHON_COMPILING_IN_CPYTHON
-          __pyx_t_2 = PyList_GET_ITEM(__pyx_t_1, __pyx_t_9); __Pyx_INCREF(__pyx_t_2); __pyx_t_9++; if (unlikely(0 < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 45; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+          __pyx_t_2 = PyList_GET_ITEM(__pyx_t_1, __pyx_t_9); __Pyx_INCREF(__pyx_t_2); __pyx_t_9++; if (unlikely(0 < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 52; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
           #else
-          __pyx_t_2 = PySequence_ITEM(__pyx_t_1, __pyx_t_9); __pyx_t_9++; if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 45; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+          __pyx_t_2 = PySequence_ITEM(__pyx_t_1, __pyx_t_9); __pyx_t_9++; if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 52; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
           __Pyx_GOTREF(__pyx_t_2);
           #endif
         } else {
           if (__pyx_t_9 >= PyTuple_GET_SIZE(__pyx_t_1)) break;
           #if CYTHON_COMPILING_IN_CPYTHON
-          __pyx_t_2 = PyTuple_GET_ITEM(__pyx_t_1, __pyx_t_9); __Pyx_INCREF(__pyx_t_2); __pyx_t_9++; if (unlikely(0 < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 45; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+          __pyx_t_2 = PyTuple_GET_ITEM(__pyx_t_1, __pyx_t_9); __Pyx_INCREF(__pyx_t_2); __pyx_t_9++; if (unlikely(0 < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 52; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
           #else
-          __pyx_t_2 = PySequence_ITEM(__pyx_t_1, __pyx_t_9); __pyx_t_9++; if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 45; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+          __pyx_t_2 = PySequence_ITEM(__pyx_t_1, __pyx_t_9); __pyx_t_9++; if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 52; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
           __Pyx_GOTREF(__pyx_t_2);
           #endif
         }
@@ -1724,30 +1759,35 @@ static PyObject *__pyx_f_10pytopojson_11to_topojson_9hashtable_9Hashtable_get(st
           PyObject* exc_type = PyErr_Occurred();
           if (exc_type) {
             if (likely(exc_type == PyExc_StopIteration || PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
-            else {__pyx_filename = __pyx_f[0]; __pyx_lineno = 45; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+            else {__pyx_filename = __pyx_f[0]; __pyx_lineno = 52; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
           }
           break;
         }
         __Pyx_GOTREF(__pyx_t_2);
       }
-      __Pyx_XDECREF_SET(__pyx_v_match, __pyx_t_2);
+      if (!(likely(PyDict_CheckExact(__pyx_t_2))||((__pyx_t_2) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "dict", Py_TYPE(__pyx_t_2)->tp_name), 0))) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 52; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __Pyx_XDECREF_SET(__pyx_v_match, ((PyObject*)__pyx_t_2));
       __pyx_t_2 = 0;
 
-      /* "pytopojson/to_topojson/hashtable.pyx":46
+      /* "pytopojson/to_topojson/hashtable.pyx":53
  *         if matches:
  *             for match in matches:
  *                 if equal(<Pair_i>match['key'], k):             # <<<<<<<<<<<<<<
  *                     return match['values']
  *         else:
  */
-      __pyx_t_2 = PyObject_GetItem(__pyx_v_match, __pyx_n_s_key); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 46; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+      if (unlikely(__pyx_v_match == Py_None)) {
+        PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
+        {__pyx_filename = __pyx_f[0]; __pyx_lineno = 53; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      }
+      __pyx_t_2 = __Pyx_PyDict_GetItem(__pyx_v_match, __pyx_n_s_key); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 53; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
       __Pyx_GOTREF(__pyx_t_2);
-      if (unlikely(__Pyx_carray_from_py_int(__pyx_t_2, __pyx_t_6, 2) < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 46; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      if (unlikely(__Pyx_carray_from_py_int(__pyx_t_2, __pyx_t_6, 2) < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 53; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
       __pyx_t_8 = (__pyx_f_10pytopojson_11to_topojson_9hashtable_equal(((int *)__pyx_t_6), __pyx_v_k) != 0);
       if (__pyx_t_8) {
 
-        /* "pytopojson/to_topojson/hashtable.pyx":47
+        /* "pytopojson/to_topojson/hashtable.pyx":54
  *             for match in matches:
  *                 if equal(<Pair_i>match['key'], k):
  *                     return match['values']             # <<<<<<<<<<<<<<
@@ -1755,14 +1795,18 @@ static PyObject *__pyx_f_10pytopojson_11to_topojson_9hashtable_9Hashtable_get(st
  *             matches = self.table[index] = []
  */
         __Pyx_XDECREF(__pyx_r);
-        __pyx_t_2 = PyObject_GetItem(__pyx_v_match, __pyx_n_s_values); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 47; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+        if (unlikely(__pyx_v_match == Py_None)) {
+          PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
+          {__pyx_filename = __pyx_f[0]; __pyx_lineno = 54; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        }
+        __pyx_t_2 = __Pyx_PyDict_GetItem(__pyx_v_match, __pyx_n_s_values); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 54; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
         __Pyx_GOTREF(__pyx_t_2);
         __pyx_r = __pyx_t_2;
         __pyx_t_2 = 0;
         __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
         goto __pyx_L0;
 
-        /* "pytopojson/to_topojson/hashtable.pyx":46
+        /* "pytopojson/to_topojson/hashtable.pyx":53
  *         if matches:
  *             for match in matches:
  *                 if equal(<Pair_i>match['key'], k):             # <<<<<<<<<<<<<<
@@ -1771,7 +1815,7 @@ static PyObject *__pyx_f_10pytopojson_11to_topojson_9hashtable_9Hashtable_get(st
  */
       }
 
-      /* "pytopojson/to_topojson/hashtable.pyx":45
+      /* "pytopojson/to_topojson/hashtable.pyx":52
  *         matches = self.table[index]
  *         if matches:
  *             for match in matches:             # <<<<<<<<<<<<<<
@@ -1781,8 +1825,8 @@ static PyObject *__pyx_f_10pytopojson_11to_topojson_9hashtable_9Hashtable_get(st
     }
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-    /* "pytopojson/to_topojson/hashtable.pyx":44
- *             return []
+    /* "pytopojson/to_topojson/hashtable.pyx":51
+ *             return empty_values
  *         matches = self.table[index]
  *         if matches:             # <<<<<<<<<<<<<<
  *             for match in matches:
@@ -1791,68 +1835,66 @@ static PyObject *__pyx_f_10pytopojson_11to_topojson_9hashtable_9Hashtable_get(st
     goto __pyx_L4;
   }
 
-  /* "pytopojson/to_topojson/hashtable.pyx":49
+  /* "pytopojson/to_topojson/hashtable.pyx":56
  *                     return match['values']
  *         else:
  *             matches = self.table[index] = []             # <<<<<<<<<<<<<<
- *         values = []
- *         matches.append({'key': key, 'values': values})
+ *         values = empty_values
+ *         matches.append({'key': key, 'values': empty_values})
  */
   /*else*/ {
-    __pyx_t_1 = PyList_New(0); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 49; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_1 = PyList_New(0); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 56; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_INCREF(__pyx_t_1);
     __Pyx_DECREF_SET(__pyx_v_matches, __pyx_t_1);
     if (unlikely(__pyx_v_self->table == Py_None)) {
       PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
-      {__pyx_filename = __pyx_f[0]; __pyx_lineno = 49; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      {__pyx_filename = __pyx_f[0]; __pyx_lineno = 56; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     }
-    if (unlikely(PyObject_SetItem(__pyx_v_self->table, __pyx_v_index, __pyx_t_1) < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 49; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (unlikely(__Pyx_SetItemInt(__pyx_v_self->table, __pyx_v_index, __pyx_t_1, long, 1, __Pyx_PyInt_From_long, 1, 1, 1) < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 56; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   }
   __pyx_L4:;
 
-  /* "pytopojson/to_topojson/hashtable.pyx":50
+  /* "pytopojson/to_topojson/hashtable.pyx":57
  *         else:
  *             matches = self.table[index] = []
- *         values = []             # <<<<<<<<<<<<<<
- *         matches.append({'key': key, 'values': values})
- *         return values
+ *         values = empty_values             # <<<<<<<<<<<<<<
+ *         matches.append({'key': key, 'values': empty_values})
+ *         return empty_values
  */
-  __pyx_t_1 = PyList_New(0); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 50; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __Pyx_GOTREF(__pyx_t_1);
-  __pyx_v_values = ((PyObject*)__pyx_t_1);
-  __pyx_t_1 = 0;
+  __Pyx_INCREF(__pyx_v_empty_values);
+  __pyx_v_values = __pyx_v_empty_values;
 
-  /* "pytopojson/to_topojson/hashtable.pyx":51
+  /* "pytopojson/to_topojson/hashtable.pyx":58
  *             matches = self.table[index] = []
- *         values = []
- *         matches.append({'key': key, 'values': values})             # <<<<<<<<<<<<<<
- *         return values
+ *         values = empty_values
+ *         matches.append({'key': key, 'values': empty_values})             # <<<<<<<<<<<<<<
+ *         return empty_values
  */
-  __pyx_t_1 = PyDict_New(); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 51; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = PyDict_New(); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 58; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_key, __pyx_v_key) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 51; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_values, __pyx_v_values) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 51; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __pyx_t_11 = __Pyx_PyObject_Append(__pyx_v_matches, __pyx_t_1); if (unlikely(__pyx_t_11 == -1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 51; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_key, __pyx_v_key) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 58; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_values, __pyx_v_empty_values) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 58; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_11 = __Pyx_PyObject_Append(__pyx_v_matches, __pyx_t_1); if (unlikely(__pyx_t_11 == -1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 58; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "pytopojson/to_topojson/hashtable.pyx":52
- *         values = []
- *         matches.append({'key': key, 'values': values})
- *         return values             # <<<<<<<<<<<<<<
+  /* "pytopojson/to_topojson/hashtable.pyx":59
+ *         values = empty_values
+ *         matches.append({'key': key, 'values': empty_values})
+ *         return empty_values             # <<<<<<<<<<<<<<
  */
   __Pyx_XDECREF(__pyx_r);
-  __Pyx_INCREF(__pyx_v_values);
-  __pyx_r = __pyx_v_values;
+  __Pyx_INCREF(__pyx_v_empty_values);
+  __pyx_r = __pyx_v_empty_values;
   goto __pyx_L0;
 
-  /* "pytopojson/to_topojson/hashtable.pyx":38
+  /* "pytopojson/to_topojson/hashtable.pyx":40
  *         return None
  * 
  *     cpdef get(self, list key):             # <<<<<<<<<<<<<<
  *         cdef Pair_i k = <Pair_i> key
- *         index = self.h(key)
+ *         cdef long index
  */
 
   /* function exit code */
@@ -1865,9 +1907,9 @@ static PyObject *__pyx_f_10pytopojson_11to_topojson_9hashtable_9Hashtable_get(st
   __Pyx_AddTraceback("pytopojson.to_topojson.hashtable.Hashtable.get", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = 0;
   __pyx_L0:;
-  __Pyx_XDECREF(__pyx_v_index);
-  __Pyx_XDECREF(__pyx_v_matches);
+  __Pyx_XDECREF(__pyx_v_empty_values);
   __Pyx_XDECREF(__pyx_v_match);
+  __Pyx_XDECREF(__pyx_v_matches);
   __Pyx_XDECREF(__pyx_v_values);
   __Pyx_XGIVEREF(__pyx_r);
   __Pyx_RefNannyFinishContext();
@@ -1883,7 +1925,7 @@ static PyObject *__pyx_pw_10pytopojson_11to_topojson_9hashtable_9Hashtable_7get(
   PyObject *__pyx_r = 0;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("get (wrapper)", 0);
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_key), (&PyList_Type), 1, "key", 1))) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 38; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_key), (&PyList_Type), 1, "key", 1))) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 40; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __pyx_r = __pyx_pf_10pytopojson_11to_topojson_9hashtable_9Hashtable_6get(((struct __pyx_obj_10pytopojson_11to_topojson_9hashtable_Hashtable *)__pyx_v_self), ((PyObject*)__pyx_v_key));
 
   /* function exit code */
@@ -1904,7 +1946,7 @@ static PyObject *__pyx_pf_10pytopojson_11to_topojson_9hashtable_9Hashtable_6get(
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("get", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __pyx_f_10pytopojson_11to_topojson_9hashtable_9Hashtable_get(__pyx_v_self, __pyx_v_key, 1); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 38; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = __pyx_f_10pytopojson_11to_topojson_9hashtable_9Hashtable_get(__pyx_v_self, __pyx_v_key, 1); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 40; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -2519,7 +2561,7 @@ PyMODINIT_FUNC PyInit_hashtable(void)
   /*--- Function export code ---*/
   /*--- Type init code ---*/
   __pyx_vtabptr_10pytopojson_11to_topojson_9hashtable_Hashtable = &__pyx_vtable_10pytopojson_11to_topojson_9hashtable_Hashtable;
-  __pyx_vtable_10pytopojson_11to_topojson_9hashtable_Hashtable.retfunc = (int (*)(struct __pyx_obj_10pytopojson_11to_topojson_9hashtable_Hashtable *, PyObject *, int __pyx_skip_dispatch))__pyx_f_10pytopojson_11to_topojson_9hashtable_9Hashtable_retfunc;
+  __pyx_vtable_10pytopojson_11to_topojson_9hashtable_Hashtable.retfunc = (long (*)(struct __pyx_obj_10pytopojson_11to_topojson_9hashtable_Hashtable *, PyObject *, int __pyx_skip_dispatch))__pyx_f_10pytopojson_11to_topojson_9hashtable_9Hashtable_retfunc;
   __pyx_vtable_10pytopojson_11to_topojson_9hashtable_Hashtable.peak = (PyObject *(*)(struct __pyx_obj_10pytopojson_11to_topojson_9hashtable_Hashtable *, PyObject *, int __pyx_skip_dispatch))__pyx_f_10pytopojson_11to_topojson_9hashtable_9Hashtable_peak;
   __pyx_vtable_10pytopojson_11to_topojson_9hashtable_Hashtable.get = (PyObject *(*)(struct __pyx_obj_10pytopojson_11to_topojson_9hashtable_Hashtable *, PyObject *, int __pyx_skip_dispatch))__pyx_f_10pytopojson_11to_topojson_9hashtable_9Hashtable_get;
   if (PyType_Ready(&__pyx_type_10pytopojson_11to_topojson_9hashtable_Hashtable) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 12; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
@@ -3162,6 +3204,54 @@ static CYTHON_INLINE int __Pyx_ArgTypeTest(PyObject *obj, PyTypeObject *type, in
     return 0;
 }
 
+static CYTHON_INLINE int __Pyx_SetItemInt_Generic(PyObject *o, PyObject *j, PyObject *v) {
+    int r;
+    if (!j) return -1;
+    r = PyObject_SetItem(o, j, v);
+    Py_DECREF(j);
+    return r;
+}
+static CYTHON_INLINE int __Pyx_SetItemInt_Fast(PyObject *o, Py_ssize_t i, PyObject *v, int is_list,
+                                               CYTHON_NCP_UNUSED int wraparound, CYTHON_NCP_UNUSED int boundscheck) {
+#if CYTHON_COMPILING_IN_CPYTHON
+    if (is_list || PyList_CheckExact(o)) {
+        Py_ssize_t n = (!wraparound) ? i : ((likely(i >= 0)) ? i : i + PyList_GET_SIZE(o));
+        if ((!boundscheck) || likely((n >= 0) & (n < PyList_GET_SIZE(o)))) {
+            PyObject* old = PyList_GET_ITEM(o, n);
+            Py_INCREF(v);
+            PyList_SET_ITEM(o, n, v);
+            Py_DECREF(old);
+            return 1;
+        }
+    } else {
+        PySequenceMethods *m = Py_TYPE(o)->tp_as_sequence;
+        if (likely(m && m->sq_ass_item)) {
+            if (wraparound && unlikely(i < 0) && likely(m->sq_length)) {
+                Py_ssize_t l = m->sq_length(o);
+                if (likely(l >= 0)) {
+                    i += l;
+                } else {
+                    if (PyErr_ExceptionMatches(PyExc_OverflowError))
+                        PyErr_Clear();
+                    else
+                        return -1;
+                }
+            }
+            return m->sq_ass_item(o, i, v);
+        }
+    }
+#else
+#if CYTHON_COMPILING_IN_PYPY
+    if (is_list || (PySequence_Check(o) && !PyDict_Check(o))) {
+#else
+    if (is_list || PySequence_Check(o)) {
+#endif
+        return PySequence_SetItem(o, i, v);
+    }
+#endif
+    return __Pyx_SetItemInt_Generic(o, PyInt_FromSsize_t(i), v);
+}
+
 static PyObject* __Pyx_PyObject_CallMethod1(PyObject* obj, PyObject* method_name, PyObject* arg) {
     PyObject *method, *result = NULL;
     method = __Pyx_PyObject_GetAttrStr(obj, method_name);
@@ -3630,58 +3720,6 @@ raise_neg_overflow:
     return (int) -1;
 }
 
-static CYTHON_INLINE PyObject* __Pyx_PyInt_From_long(long value) {
-    const long neg_one = (long) -1, const_zero = (long) 0;
-    const int is_unsigned = neg_one > const_zero;
-    if (is_unsigned) {
-        if (sizeof(long) < sizeof(long)) {
-            return PyInt_FromLong((long) value);
-        } else if (sizeof(long) <= sizeof(unsigned long)) {
-            return PyLong_FromUnsignedLong((unsigned long) value);
-        } else if (sizeof(long) <= sizeof(unsigned PY_LONG_LONG)) {
-            return PyLong_FromUnsignedLongLong((unsigned PY_LONG_LONG) value);
-        }
-    } else {
-        if (sizeof(long) <= sizeof(long)) {
-            return PyInt_FromLong((long) value);
-        } else if (sizeof(long) <= sizeof(PY_LONG_LONG)) {
-            return PyLong_FromLongLong((PY_LONG_LONG) value);
-        }
-    }
-    {
-        int one = 1; int little = (int)*(unsigned char *)&one;
-        unsigned char *bytes = (unsigned char *)&value;
-        return _PyLong_FromByteArray(bytes, sizeof(long),
-                                     little, !is_unsigned);
-    }
-}
-
-static CYTHON_INLINE PyObject* __Pyx_PyInt_From_int(int value) {
-    const int neg_one = (int) -1, const_zero = (int) 0;
-    const int is_unsigned = neg_one > const_zero;
-    if (is_unsigned) {
-        if (sizeof(int) < sizeof(long)) {
-            return PyInt_FromLong((long) value);
-        } else if (sizeof(int) <= sizeof(unsigned long)) {
-            return PyLong_FromUnsignedLong((unsigned long) value);
-        } else if (sizeof(int) <= sizeof(unsigned PY_LONG_LONG)) {
-            return PyLong_FromUnsignedLongLong((unsigned PY_LONG_LONG) value);
-        }
-    } else {
-        if (sizeof(int) <= sizeof(long)) {
-            return PyInt_FromLong((long) value);
-        } else if (sizeof(int) <= sizeof(PY_LONG_LONG)) {
-            return PyLong_FromLongLong((PY_LONG_LONG) value);
-        }
-    }
-    {
-        int one = 1; int little = (int)*(unsigned char *)&one;
-        unsigned char *bytes = (unsigned char *)&value;
-        return _PyLong_FromByteArray(bytes, sizeof(int),
-                                     little, !is_unsigned);
-    }
-}
-
 static CYTHON_INLINE long __Pyx_PyInt_As_long(PyObject *x) {
     const long neg_one = (long) -1, const_zero = (long) 0;
     const int is_unsigned = neg_one > const_zero;
@@ -3864,6 +3902,32 @@ raise_neg_overflow:
     PyErr_SetString(PyExc_OverflowError,
         "can't convert negative value to long");
     return (long) -1;
+}
+
+static CYTHON_INLINE PyObject* __Pyx_PyInt_From_long(long value) {
+    const long neg_one = (long) -1, const_zero = (long) 0;
+    const int is_unsigned = neg_one > const_zero;
+    if (is_unsigned) {
+        if (sizeof(long) < sizeof(long)) {
+            return PyInt_FromLong((long) value);
+        } else if (sizeof(long) <= sizeof(unsigned long)) {
+            return PyLong_FromUnsignedLong((unsigned long) value);
+        } else if (sizeof(long) <= sizeof(unsigned PY_LONG_LONG)) {
+            return PyLong_FromUnsignedLongLong((unsigned PY_LONG_LONG) value);
+        }
+    } else {
+        if (sizeof(long) <= sizeof(long)) {
+            return PyInt_FromLong((long) value);
+        } else if (sizeof(long) <= sizeof(PY_LONG_LONG)) {
+            return PyLong_FromLongLong((PY_LONG_LONG) value);
+        }
+    }
+    {
+        int one = 1; int little = (int)*(unsigned char *)&one;
+        unsigned char *bytes = (unsigned char *)&value;
+        return _PyLong_FromByteArray(bytes, sizeof(long),
+                                     little, !is_unsigned);
+    }
 }
 
 static int __Pyx_check_binary_version(void) {

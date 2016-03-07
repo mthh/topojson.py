@@ -12,6 +12,12 @@ exts = [Extension("pytopojson/to_topojson/simplcy",
             ["pytopojson/to_topojson/hashtable.pyx"], ["pytopojson"]),
         Extension("pytopojson/to_topojson/utils",
             ["pytopojson/to_topojson/utils.pyx"], ["pytopojson"]),
+        Extension("pytopojson/to_topojson/line",
+            ["pytopojson/to_topojson/line.pyx"], ["pytopojson"]),
+        Extension("pytopojson/to_topojson/arcs",
+            ["pytopojson/to_topojson/arcs.pyx"], ["pytopojson"]),
+        Extension("pytopojson/to_topojson/stitchpoles",
+            ["pytopojson/to_topojson/stitchpoles.pyx"], ["pytopojson"]),
         Extension("pytopojson.to_geojson.transform",
             ["pytopojson/to_geojson/transform.pyx"], ["pytopojson"])]
 

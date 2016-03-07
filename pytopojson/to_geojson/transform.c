@@ -618,6 +618,29 @@ static int __Pyx_ParseOptionalKeywords(PyObject *kwds, PyObject **argnames[],\
     PyObject *kwds2, PyObject *values[], Py_ssize_t num_pos_args,\
     const char* function_name);
 
+static CYTHON_INLINE int __Pyx_ArgTypeTest(PyObject *obj, PyTypeObject *type, int none_allowed,
+    const char *name, int exact);
+
+#if PY_MAJOR_VERSION >= 3 && !CYTHON_COMPILING_IN_PYPY
+static PyObject *__Pyx_PyDict_GetItem(PyObject *d, PyObject* key) {
+    PyObject *value;
+    value = PyDict_GetItemWithError(d, key);
+    if (unlikely(!value)) {
+        if (!PyErr_Occurred()) {
+            PyObject* args = PyTuple_Pack(1, key);
+            if (likely(args))
+                PyErr_SetObject(PyExc_KeyError, args);
+            Py_XDECREF(args);
+        }
+        return NULL;
+    }
+    Py_INCREF(value);
+    return value;
+}
+#else
+    #define __Pyx_PyDict_GetItem(d, key) PyObject_GetItem(d, key)
+#endif
+
 static CYTHON_INLINE void __Pyx_RaiseTooManyValuesError(Py_ssize_t expected);
 
 static CYTHON_INLINE void __Pyx_RaiseNeedMoreValuesError(Py_ssize_t index);
@@ -717,26 +740,6 @@ static CYTHON_INLINE PyObject* __Pyx_PyObject_CallMethO(PyObject *func, PyObject
 
 static CYTHON_INLINE PyObject* __Pyx_PyObject_CallOneArg(PyObject *func, PyObject *arg);
 
-#if PY_MAJOR_VERSION >= 3 && !CYTHON_COMPILING_IN_PYPY
-static PyObject *__Pyx_PyDict_GetItem(PyObject *d, PyObject* key) {
-    PyObject *value;
-    value = PyDict_GetItemWithError(d, key);
-    if (unlikely(!value)) {
-        if (!PyErr_Occurred()) {
-            PyObject* args = PyTuple_Pack(1, key);
-            if (likely(args))
-                PyErr_SetObject(PyExc_KeyError, args);
-            Py_XDECREF(args);
-        }
-        return NULL;
-    }
-    Py_INCREF(value);
-    return value;
-}
-#else
-    #define __Pyx_PyDict_GetItem(d, key) PyObject_GetItem(d, key)
-#endif
-
 #include <string.h>
 
 static CYTHON_INLINE int __Pyx_PyBytes_Equals(PyObject* s1, PyObject* s2, int equals);
@@ -797,12 +800,10 @@ static PyTypeObject *__pyx_ptype_10pytopojson_10to_geojson_9transform_Transforme
 int __pyx_module_is_main_pytopojson__to_geojson__transform = 0;
 
 /* Implementation of 'pytopojson.to_geojson.transform' */
-static PyObject *__pyx_builtin_map;
 static PyObject *__pyx_builtin_reversed;
 static char __pyx_k_x[] = "x";
 static char __pyx_k_y[] = "y";
 static char __pyx_k_id[] = "id";
-static char __pyx_k_map[] = "map";
 static char __pyx_k_arcs[] = "arcs";
 static char __pyx_k_bbox[] = "bbox";
 static char __pyx_k_main[] = "__main__";
@@ -854,7 +855,6 @@ static PyObject *__pyx_n_s_geometry_collection;
 static PyObject *__pyx_n_s_id;
 static PyObject *__pyx_n_s_line_string;
 static PyObject *__pyx_n_s_main;
-static PyObject *__pyx_n_s_map;
 static PyObject *__pyx_n_s_multi_line_string_poly;
 static PyObject *__pyx_n_s_multi_point;
 static PyObject *__pyx_n_s_multi_poly;
@@ -887,7 +887,7 @@ static PyObject *__pyx_tuple__2;
 /* "pytopojson/to_geojson/transform.pyx":18
  *     cdef Trans_param translate
  *     cdef list arcs
- *     def __init__(self, transform, arcs):             # <<<<<<<<<<<<<<
+ *     def __init__(self, dict transform, arcs):             # <<<<<<<<<<<<<<
  *         self.scale.x, self.scale.y = transform['scale']
  *         self.translate.x, self.translate.y = transform['translate']
  */
@@ -935,7 +935,7 @@ static int __pyx_pw_10pytopojson_10to_geojson_9transform_11Transformer_1__init__
       values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
       values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
     }
-    __pyx_v_transform = values[0];
+    __pyx_v_transform = ((PyObject*)values[0]);
     __pyx_v_arcs = values[1];
   }
   goto __pyx_L4_argument_unpacking_done;
@@ -946,9 +946,14 @@ static int __pyx_pw_10pytopojson_10to_geojson_9transform_11Transformer_1__init__
   __Pyx_RefNannyFinishContext();
   return -1;
   __pyx_L4_argument_unpacking_done:;
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_transform), (&PyDict_Type), 1, "transform", 1))) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 18; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __pyx_r = __pyx_pf_10pytopojson_10to_geojson_9transform_11Transformer___init__(((struct __pyx_obj_10pytopojson_10to_geojson_9transform_Transformer *)__pyx_v_self), __pyx_v_transform, __pyx_v_arcs);
 
   /* function exit code */
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __pyx_r = -1;
+  __pyx_L0:;
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
@@ -973,12 +978,16 @@ static int __pyx_pf_10pytopojson_10to_geojson_9transform_11Transformer___init__(
 
   /* "pytopojson/to_geojson/transform.pyx":19
  *     cdef list arcs
- *     def __init__(self, transform, arcs):
+ *     def __init__(self, dict transform, arcs):
  *         self.scale.x, self.scale.y = transform['scale']             # <<<<<<<<<<<<<<
  *         self.translate.x, self.translate.y = transform['translate']
  *         self.arcs = [self.convert_arc(a) for a in arcs]
  */
-  __pyx_t_1 = PyObject_GetItem(__pyx_v_transform, __pyx_n_s_scale); if (unlikely(__pyx_t_1 == NULL)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 19; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  if (unlikely(__pyx_v_transform == Py_None)) {
+    PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
+    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 19; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  }
+  __pyx_t_1 = __Pyx_PyDict_GetItem(__pyx_v_transform, __pyx_n_s_scale); if (unlikely(__pyx_t_1 == NULL)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 19; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
   __Pyx_GOTREF(__pyx_t_1);
   if ((likely(PyTuple_CheckExact(__pyx_t_1))) || (PyList_CheckExact(__pyx_t_1))) {
     PyObject* sequence = __pyx_t_1;
@@ -1038,13 +1047,17 @@ static int __pyx_pf_10pytopojson_10to_geojson_9transform_11Transformer___init__(
   __pyx_v_self->scale.y = __pyx_t_7;
 
   /* "pytopojson/to_geojson/transform.pyx":20
- *     def __init__(self, transform, arcs):
+ *     def __init__(self, dict transform, arcs):
  *         self.scale.x, self.scale.y = transform['scale']
  *         self.translate.x, self.translate.y = transform['translate']             # <<<<<<<<<<<<<<
  *         self.arcs = [self.convert_arc(a) for a in arcs]
  * 
  */
-  __pyx_t_1 = PyObject_GetItem(__pyx_v_transform, __pyx_n_s_translate); if (unlikely(__pyx_t_1 == NULL)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 20; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  if (unlikely(__pyx_v_transform == Py_None)) {
+    PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
+    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 20; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  }
+  __pyx_t_1 = __Pyx_PyDict_GetItem(__pyx_v_transform, __pyx_n_s_translate); if (unlikely(__pyx_t_1 == NULL)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 20; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
   __Pyx_GOTREF(__pyx_t_1);
   if ((likely(PyTuple_CheckExact(__pyx_t_1))) || (PyList_CheckExact(__pyx_t_1))) {
     PyObject* sequence = __pyx_t_1;
@@ -1169,7 +1182,7 @@ static int __pyx_pf_10pytopojson_10to_geojson_9transform_11Transformer___init__(
   /* "pytopojson/to_geojson/transform.pyx":18
  *     cdef Trans_param translate
  *     cdef list arcs
- *     def __init__(self, transform, arcs):             # <<<<<<<<<<<<<<
+ *     def __init__(self, dict transform, arcs):             # <<<<<<<<<<<<<<
  *         self.scale.x, self.scale.y = transform['scale']
  *         self.translate.x, self.translate.y = transform['translate']
  */
@@ -1326,7 +1339,7 @@ static PyObject *__pyx_f_10pytopojson_10to_geojson_9transform_11Transformer_conv
  *             out_arc.append(self.convert_point(previous))
  *         return out_arc             # <<<<<<<<<<<<<<
  * 
- *     cdef list reversed_arc(self,arc):
+ *     cdef list reversed_arc(self, arc):
  */
   __Pyx_XDECREF(__pyx_r);
   __Pyx_INCREF(__pyx_v_out_arc);
@@ -1361,8 +1374,8 @@ static PyObject *__pyx_f_10pytopojson_10to_geojson_9transform_11Transformer_conv
 /* "pytopojson/to_geojson/transform.pyx":31
  *         return out_arc
  * 
- *     cdef list reversed_arc(self,arc):             # <<<<<<<<<<<<<<
- *         return list(map(None,reversed(self.arcs[~arc])))
+ *     cdef list reversed_arc(self, arc):             # <<<<<<<<<<<<<<
+ *         return list(reversed(self.arcs[~arc]))
  * 
  */
 
@@ -1378,8 +1391,8 @@ static PyObject *__pyx_f_10pytopojson_10to_geojson_9transform_11Transformer_reve
 
   /* "pytopojson/to_geojson/transform.pyx":32
  * 
- *     cdef list reversed_arc(self,arc):
- *         return list(map(None,reversed(self.arcs[~arc])))             # <<<<<<<<<<<<<<
+ *     cdef list reversed_arc(self, arc):
+ *         return list(reversed(self.arcs[~arc]))             # <<<<<<<<<<<<<<
  * 
  *     cdef list stitch_arcs(self, list arcs):
  */
@@ -1401,17 +1414,6 @@ static PyObject *__pyx_f_10pytopojson_10to_geojson_9transform_11Transformer_reve
   __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_reversed, __pyx_t_1, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 32; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_1 = PyTuple_New(2); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 32; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __Pyx_GOTREF(__pyx_t_1);
-  __Pyx_INCREF(Py_None);
-  __Pyx_GIVEREF(Py_None);
-  PyTuple_SET_ITEM(__pyx_t_1, 0, Py_None);
-  __Pyx_GIVEREF(__pyx_t_2);
-  PyTuple_SET_ITEM(__pyx_t_1, 1, __pyx_t_2);
-  __pyx_t_2 = 0;
-  __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_map, __pyx_t_1, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 32; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __Pyx_GOTREF(__pyx_t_2);
-  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_t_1 = PySequence_List(__pyx_t_2); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 32; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
@@ -1422,8 +1424,8 @@ static PyObject *__pyx_f_10pytopojson_10to_geojson_9transform_11Transformer_reve
   /* "pytopojson/to_geojson/transform.pyx":31
  *         return out_arc
  * 
- *     cdef list reversed_arc(self,arc):             # <<<<<<<<<<<<<<
- *         return list(map(None,reversed(self.arcs[~arc])))
+ *     cdef list reversed_arc(self, arc):             # <<<<<<<<<<<<<<
+ *         return list(reversed(self.arcs[~arc]))
  * 
  */
 
@@ -1440,7 +1442,7 @@ static PyObject *__pyx_f_10pytopojson_10to_geojson_9transform_11Transformer_reve
 }
 
 /* "pytopojson/to_geojson/transform.pyx":34
- *         return list(map(None,reversed(self.arcs[~arc])))
+ *         return list(reversed(self.arcs[~arc]))
  * 
  *     cdef list stitch_arcs(self, list arcs):             # <<<<<<<<<<<<<<
  *         cdef list line_string = []
@@ -1471,7 +1473,7 @@ static PyObject *__pyx_f_10pytopojson_10to_geojson_9transform_11Transformer_stit
  *     cdef list stitch_arcs(self, list arcs):
  *         cdef list line_string = []             # <<<<<<<<<<<<<<
  *         for arc in arcs:
- *             if arc<0:
+ *             if arc < 0:
  */
   __pyx_t_1 = PyList_New(0); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 35; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
@@ -1482,7 +1484,7 @@ static PyObject *__pyx_f_10pytopojson_10to_geojson_9transform_11Transformer_stit
  *     cdef list stitch_arcs(self, list arcs):
  *         cdef list line_string = []
  *         for arc in arcs:             # <<<<<<<<<<<<<<
- *             if arc<0:
+ *             if arc < 0:
  *                 line = self.reversed_arc(arc)
  */
   if (unlikely(__pyx_v_arcs == Py_None)) {
@@ -1504,7 +1506,7 @@ static PyObject *__pyx_f_10pytopojson_10to_geojson_9transform_11Transformer_stit
     /* "pytopojson/to_geojson/transform.pyx":37
  *         cdef list line_string = []
  *         for arc in arcs:
- *             if arc<0:             # <<<<<<<<<<<<<<
+ *             if arc < 0:             # <<<<<<<<<<<<<<
  *                 line = self.reversed_arc(arc)
  *             else:
  */
@@ -1515,7 +1517,7 @@ static PyObject *__pyx_f_10pytopojson_10to_geojson_9transform_11Transformer_stit
 
       /* "pytopojson/to_geojson/transform.pyx":38
  *         for arc in arcs:
- *             if arc<0:
+ *             if arc < 0:
  *                 line = self.reversed_arc(arc)             # <<<<<<<<<<<<<<
  *             else:
  *                 line = self.arcs[arc]
@@ -1528,7 +1530,7 @@ static PyObject *__pyx_f_10pytopojson_10to_geojson_9transform_11Transformer_stit
       /* "pytopojson/to_geojson/transform.pyx":37
  *         cdef list line_string = []
  *         for arc in arcs:
- *             if arc<0:             # <<<<<<<<<<<<<<
+ *             if arc < 0:             # <<<<<<<<<<<<<<
  *                 line = self.reversed_arc(arc)
  *             else:
  */
@@ -1643,7 +1645,7 @@ static PyObject *__pyx_f_10pytopojson_10to_geojson_9transform_11Transformer_stit
  *     cdef list stitch_arcs(self, list arcs):
  *         cdef list line_string = []
  *         for arc in arcs:             # <<<<<<<<<<<<<<
- *             if arc<0:
+ *             if arc < 0:
  *                 line = self.reversed_arc(arc)
  */
   }
@@ -1662,7 +1664,7 @@ static PyObject *__pyx_f_10pytopojson_10to_geojson_9transform_11Transformer_stit
   goto __pyx_L0;
 
   /* "pytopojson/to_geojson/transform.pyx":34
- *         return list(map(None,reversed(self.arcs[~arc])))
+ *         return list(reversed(self.arcs[~arc]))
  * 
  *     cdef list stitch_arcs(self, list arcs):             # <<<<<<<<<<<<<<
  *         cdef list line_string = []
@@ -3692,7 +3694,6 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_id, __pyx_k_id, sizeof(__pyx_k_id), 0, 0, 1, 1},
   {&__pyx_n_s_line_string, __pyx_k_line_string, sizeof(__pyx_k_line_string), 0, 0, 1, 1},
   {&__pyx_n_s_main, __pyx_k_main, sizeof(__pyx_k_main), 0, 0, 1, 1},
-  {&__pyx_n_s_map, __pyx_k_map, sizeof(__pyx_k_map), 0, 0, 1, 1},
   {&__pyx_n_s_multi_line_string_poly, __pyx_k_multi_line_string_poly, sizeof(__pyx_k_multi_line_string_poly), 0, 0, 1, 1},
   {&__pyx_n_s_multi_point, __pyx_k_multi_point, sizeof(__pyx_k_multi_point), 0, 0, 1, 1},
   {&__pyx_n_s_multi_poly, __pyx_k_multi_poly, sizeof(__pyx_k_multi_poly), 0, 0, 1, 1},
@@ -3710,7 +3711,6 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {0, 0, 0, 0, 0, 0, 0}
 };
 static int __Pyx_InitCachedBuiltins(void) {
-  __pyx_builtin_map = __Pyx_GetBuiltinName(__pyx_n_s_map); if (!__pyx_builtin_map) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 32; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __pyx_builtin_reversed = __Pyx_GetBuiltinName(__pyx_n_s_reversed); if (!__pyx_builtin_reversed) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 32; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   return 0;
   __pyx_L1_error:;
@@ -4064,6 +4064,32 @@ invalid_keyword:
     #endif
 bad:
     return -1;
+}
+
+static void __Pyx_RaiseArgumentTypeInvalid(const char* name, PyObject *obj, PyTypeObject *type) {
+    PyErr_Format(PyExc_TypeError,
+        "Argument '%.200s' has incorrect type (expected %.200s, got %.200s)",
+        name, type->tp_name, Py_TYPE(obj)->tp_name);
+}
+static CYTHON_INLINE int __Pyx_ArgTypeTest(PyObject *obj, PyTypeObject *type, int none_allowed,
+    const char *name, int exact)
+{
+    if (unlikely(!type)) {
+        PyErr_SetString(PyExc_SystemError, "Missing type object");
+        return 0;
+    }
+    if (none_allowed && obj == Py_None) return 1;
+    else if (exact) {
+        if (likely(Py_TYPE(obj) == type)) return 1;
+        #if PY_MAJOR_VERSION == 2
+        else if ((type == &PyBaseString_Type) && likely(__Pyx_PyBaseString_CheckExact(obj))) return 1;
+        #endif
+    }
+    else {
+        if (likely(PyObject_TypeCheck(obj, type))) return 1;
+    }
+    __Pyx_RaiseArgumentTypeInvalid(name, obj, type);
+    return 0;
 }
 
 static CYTHON_INLINE void __Pyx_RaiseTooManyValuesError(Py_ssize_t expected) {
