@@ -1,25 +1,25 @@
 from ujson import load, loads, dump
 from io import TextIOWrapper
-from .transform import Transformer
+from .transform import Transformer, Transformer_no_transform
 
 def convert(topojson, input_name=None, geojson=None):
     if isinstance(topojson, dict):
-        parsed_geojson = topojson
+        parsed_json = topojson
 
     elif isinstance(topojson, TextIOWrapper):
-        parsed_geojson = load(topojson)
+        parsed_json = load(topojson)
 
     elif isinstance(topojson, str):
         try:
-            with open(topojson) as in_file:
-                parsed_geojson = load(in_file)
+            with open(topojson, "r") as in_file:
+                parsed_json = loads(in_file.read())
         except:
-            parsed_geojson = loads(topojson)
+            parsed_json = loads(topojson)
 
     if input_name is None:
-        input_name = list(parsed_geojson['objects'].keys())[0]
+        input_name = list(parsed_json['objects'].keys())[0]
 
-    out = from_topo(parsed_geojson, input_name)
+    out = from_topo(parsed_json, input_name)
 
     if isinstance(geojson, str):
         with open(geojson, 'w') as f:
@@ -45,7 +45,10 @@ def from_topo(topo, obj_name):
         geojson = topo['objects'][obj_name]
     else:
         raise Exception(u"Something ain't right")
-    transformer = Transformer(topo['transform'], topo['arcs'])
+    if not "transform" in topo:
+        transformer = Transformer_no_transform(topo['arcs'])
+    else:
+        transformer = Transformer(topo['transform'], topo['arcs'])
     if geojson['type'] in TYPEGEOMETRIES:
-        geojson = transformer.geometry(geojson)
+        geojson = transformer.geom_dispatch(geojson)
     return geojson
